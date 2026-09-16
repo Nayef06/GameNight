@@ -1,0 +1,14 @@
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/*.tsbuildinfo
+
+# Backend
+backend/target/
+
+# IDE and local settings
+.idea/
+.vscode/
+*.iml
+.env

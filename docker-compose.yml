@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gamenight
+      POSTGRES_USER: gamenight
+      POSTGRES_PASSWORD: gamenight
+    ports:
+      - "5432:5432"
+    volumes:
+      - gamenight_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  gamenight_postgres_data:
+
