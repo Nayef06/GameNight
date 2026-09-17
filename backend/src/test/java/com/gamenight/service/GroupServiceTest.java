@@ -22,6 +22,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +39,38 @@ class GroupServiceTest {
     @BeforeEach
     void setUp() {
         groupService = new GroupService(currentUserService, groupRepository, membershipRepository, userGameRepository);
+    }
+
+    @Test
+    void userCanCreateAGroup() {
+        AppUser currentUser = mock(AppUser.class);
+        when(currentUserService.get()).thenReturn(currentUser);
+        when(groupRepository.existsByJoinCode(any())).thenReturn(false);
+        when(groupRepository.save(any(GameGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = groupService.create(" Friday Night Group ");
+
+        assertThat(result.name()).isEqualTo("Friday Night Group");
+        assertThat(result.joinCode()).hasSize(6);
+        verify(membershipRepository).save(any(GroupMembership.class));
+    }
+
+    @Test
+    void anotherUserCanJoinUsingTheJoinCode() {
+        AppUser alex = user(2L);
+        GameGroup group = mock(GameGroup.class);
+        when(group.getId()).thenReturn(10L);
+        when(group.getName()).thenReturn("Friday Night Group");
+        when(group.getJoinCode()).thenReturn("ABC234");
+        when(currentUserService.get()).thenReturn(alex);
+        when(groupRepository.findByJoinCode("ABC234")).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(2L, 10L)).thenReturn(false);
+
+        var result = groupService.join(" abc234 ");
+
+        assertThat(result.name()).isEqualTo("Friday Night Group");
+        assertThat(result.joinCode()).isEqualTo("ABC234");
+        verify(membershipRepository).save(any(GroupMembership.class));
     }
 
     @Test

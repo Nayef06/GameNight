@@ -10,10 +10,16 @@ This repository implements only that flow. It has no external game APIs, recomme
 - `backend/` — Spring Boot REST API
 - `docker-compose.yml` — local PostgreSQL only
 
-## Prerequisites
+## Tech stack
+
+- Java 21, Spring Boot, Spring Security, Spring Data JPA, and JWT authentication
+- PostgreSQL 16
+- Next.js 16, React 19, and TypeScript
+
+## Requirements
 
 - Java 21 or newer
-- Maven 3.9+
+- Maven 3.6.3+
 - Node.js 20+
 - Docker (for the included PostgreSQL setup), or a local PostgreSQL server
 
@@ -38,15 +44,15 @@ This repository implements only that flow. It has no external game APIs, recomme
 
    ```bash
    cd frontend
-   npm install
+   npm ci
    npm run dev
    ```
 
 4. Open `http://localhost:3000`.
 
-To demonstrate the full flow, create two accounts in separate browser profiles, add at least one identical game title to both libraries, then create a group with one account and join it with the other using the six-character code.
+PostgreSQL data is stored in the named Docker volume `gamenight_postgres_data`, so it remains available after the containers and applications stop. `docker compose down` preserves it; `docker compose down -v` removes it.
 
-## Configuration
+## Environment variables
 
 The default values match `docker-compose.yml` and are suitable for local development.
 
@@ -59,6 +65,19 @@ The default values match `docker-compose.yml` and are suitable for local develop
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8080/api` | API base URL used by the UI |
 
 Use a new Base64-encoded secret of at least 32 bytes outside local development.
+
+## Demo walkthrough
+
+Use two browser profiles (or a normal and private window) so both users can stay logged in.
+
+1. Register `Nayef` with any password of at least six characters. Usernames are stored in lowercase, so the UI will show `nayef`.
+2. Add `Terraria`, `Minecraft`, and `Lethal Company` to Nayef's library.
+3. Create a group named `Friday Night Group` and copy its six-character join code.
+4. In the other browser profile, register `Alex` and add `Terraria`, `Lethal Company`, and `Valorant`.
+5. Open **My Groups**, join with the copied code, and open **Friday Night Group**.
+6. Confirm both `alex` and `nayef` are listed under **Members**.
+7. Confirm **Games Everyone Owns:** lists only `Lethal Company` and `Terraria`.
+8. Refresh the page. The members and shared games should still be present because they are stored in PostgreSQL.
 
 ## API
 

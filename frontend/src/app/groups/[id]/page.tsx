@@ -42,7 +42,7 @@ export default function GroupPage() {
               {group.members.map((member) => <li key={member}>{member}</li>)}
             </ul>
             <hr />
-            <h2>Games Everyone Owns</h2>
+            <h2>Games Everyone Owns:</h2>
             {sharedGames.length === 0 ? (
               <p>No games are currently owned by everyone in this group.</p>
             ) : (
