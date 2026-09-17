@@ -1,4 +1,4 @@
-# GameNight — Layer 1
+# GameNight
 
 GameNight is a deliberately small semester-project prototype. Users manually list the games they own, create or join groups, and see the games owned by every member of a group.
 

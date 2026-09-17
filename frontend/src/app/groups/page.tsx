@@ -48,21 +48,8 @@ export default function GroupsPage() {
   return (
     <RequireAuth>
       <section className="card">
-        <h1>Groups</h1>
-        <div className="two-columns">
-          <form onSubmit={createGroup}>
-            <h2>Create a group</h2>
-            <label>Group name<input maxLength={80} value={name} onChange={(e) => setName(e.target.value)} required /></label>
-            <button>Create</button>
-          </form>
-          <form onSubmit={joinGroup}>
-            <h2>Join a group</h2>
-            <label>6-character join code<input className="code-input" minLength={6} maxLength={6} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} required /></label>
-            <button>Join</button>
-          </form>
-        </div>
+        <h1>My Groups</h1>
         {error && <p className="error">{error}</p>}
-        <h2>My groups</h2>
         {groups.length === 0 ? <p>You have not created or joined a group yet.</p> : (
           <ul className="item-list">
             {groups.map((group) => (
@@ -73,8 +60,19 @@ export default function GroupsPage() {
             ))}
           </ul>
         )}
+        <div className="two-columns">
+          <form onSubmit={createGroup}>
+            <h2>Create Group</h2>
+            <label>Group name<input maxLength={80} value={name} onChange={(e) => setName(e.target.value)} required /></label>
+            <button>Create</button>
+          </form>
+          <form onSubmit={joinGroup}>
+            <h2>Join Group</h2>
+            <label>6-character join code<input className="code-input" minLength={6} maxLength={6} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} required /></label>
+            <button>Join</button>
+          </form>
+        </div>
       </section>
     </RequireAuth>
   );
 }
-

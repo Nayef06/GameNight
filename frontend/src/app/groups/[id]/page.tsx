@@ -31,17 +31,20 @@ export default function GroupPage() {
   return (
     <RequireAuth>
       <section className="card">
-        <Link href="/groups">← Back to groups</Link>
+        <Link href="/groups">Back to groups</Link>
         {error && <p className="error">{error}</p>}
         {!group ? !error && <p>Loading group...</p> : (
           <>
             <h1>{group.name}</h1>
             <p>Join code: <strong className="join-code">{group.joinCode}</strong></p>
-            <p>Members: {group.members.join(", ")}</p>
+            <h2>Members</h2>
+            <ul className="simple-list">
+              {group.members.map((member) => <li key={member}>{member}</li>)}
+            </ul>
             <hr />
-            <h2>Games everyone owns</h2>
+            <h2>Games Everyone Owns</h2>
             {sharedGames.length === 0 ? (
-              <p>No games are currently owned by every member.</p>
+              <p>No games are currently owned by everyone in this group.</p>
             ) : (
               <ul className="simple-list">{sharedGames.map((game) => <li key={game.id}>{game.title}</li>)}</ul>
             )}
@@ -51,4 +54,3 @@ export default function GroupPage() {
     </RequireAuth>
   );
 }
-

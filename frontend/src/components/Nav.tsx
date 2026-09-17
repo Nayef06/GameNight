@@ -12,9 +12,11 @@ export function Nav() {
         <Link className="brand" href="/">GameNight</Link>
         {ready && username ? (
           <div className="nav-links">
+            <span className="separator">|</span>
             <Link href="/library">My Library</Link>
-            <Link href="/groups">Groups</Link>
-            <span>{username}</span>
+            <span className="separator">|</span>
+            <Link href="/groups">My Groups</Link>
+            <span className="separator">|</span>
             <button className="link-button" onClick={logout}>Logout</button>
           </div>
         ) : ready ? (
@@ -27,4 +29,3 @@ export function Nav() {
     </header>
   );
 }
-

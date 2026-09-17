@@ -32,7 +32,7 @@ public class AuthService {
     public AuthResponse register(AuthRequest request) {
         String username = normalizeUsername(request.username());
         if (userRepository.existsByUsername(username)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already taken");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.");
         }
         AppUser user = userRepository.save(new AppUser(username, passwordEncoder.encode(request.password())));
         return new AuthResponse(jwtService.createToken(user.getUsername()), user.getUsername());
@@ -49,4 +49,3 @@ public class AuthService {
         return username.trim().toLowerCase(Locale.ROOT);
     }
 }
-

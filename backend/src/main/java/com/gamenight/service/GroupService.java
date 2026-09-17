@@ -63,9 +63,9 @@ public class GroupService {
         AppUser user = currentUserService.get();
         String code = requestedCode.trim().toUpperCase(Locale.ROOT);
         GameGroup group = groupRepository.findByJoinCode(code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No group has that join code"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid join code."));
         if (membershipRepository.existsByUserIdAndGroupId(user.getId(), group.getId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already a member of this group");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already a member of this group.");
         }
         membershipRepository.save(new GroupMembership(user, group));
         return toSummary(group);
@@ -89,6 +89,9 @@ public class GroupService {
         List<Long> memberIds = membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId).stream()
                 .map(membership -> membership.getUser().getId())
                 .toList();
+        if (memberIds.isEmpty()) {
+            return List.of();
+        }
 
         Map<Long, Integer> ownerCounts = new HashMap<>();
         Map<Long, Game> games = new HashMap<>();
@@ -107,9 +110,9 @@ public class GroupService {
 
     private GameGroup requireGroupMember(Long groupId, AppUser user) {
         GameGroup group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Group not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Group not found."));
         if (!membershipRepository.existsByUserIdAndGroupId(user.getId(), groupId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this group");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this group.");
         }
         return group;
     }

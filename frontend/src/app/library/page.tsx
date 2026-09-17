@@ -46,10 +46,14 @@ export default function LibraryPage() {
       <section className="card">
         <h1>My Library</h1>
         <form className="inline-form" onSubmit={addGame}>
-          <input aria-label="Game title" placeholder="Game title, e.g. Terraria" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} required />
-          <button>Add game</button>
+          <label className="inline-label" htmlFor="game-title">
+            Game title:
+            <input id="game-title" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </label>
+          <button>Add Game</button>
         </form>
         {error && <p className="error">{error}</p>}
+        <h2>My Games</h2>
         {games.length === 0 ? <p>Your library is empty.</p> : (
           <ul className="item-list">
             {games.map((game) => (
@@ -61,4 +65,3 @@ export default function LibraryPage() {
     </RequireAuth>
   );
 }
-

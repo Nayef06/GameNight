@@ -44,7 +44,7 @@ public class LibraryService {
                 .orElseGet(() -> gameRepository.save(new Game(title, normalizedTitle)));
 
         if (userGameRepository.existsByUserIdAndGameId(user.getId(), game.getId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already in your library");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already in your library.");
         }
         userGameRepository.save(new UserGame(user, game));
         return toResponse(game);
@@ -54,7 +54,7 @@ public class LibraryService {
     public void removeGame(Long gameId) {
         AppUser user = currentUserService.get();
         if (userGameRepository.deleteByUserIdAndGameId(user.getId(), gameId) == 0) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game is not in your library");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game is not in your library.");
         }
     }
 
@@ -62,4 +62,3 @@ public class LibraryService {
         return new GameResponse(game.getId(), game.getTitle());
     }
 }
-
