@@ -14,7 +14,7 @@
     <artifactId>gamenight-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>GameNight Backend</name>
-    <description>Layer 1 API for GameNight</description>
+    <description>GameNight API with basic game metadata and shared-game filtering</description>
 
     <properties>
         <java.version>21</java.version>
@@ -80,4 +80,3 @@
         </plugins>
     </build>
 </project>
-

@@ -36,12 +36,22 @@ public class LibraryService {
     }
 
     @Transactional
-    public GameResponse addGame(String requestedTitle) {
+    public GameResponse addGame(String requestedTitle, String requestedGenre,
+                                boolean multiplayerSupport, int maxPlayers) {
+        if (maxPlayers < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum players must be at least 1.");
+        }
+        String genre = requestedGenre.trim().replaceAll("\\s+", " ");
+        if (genre.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Genre cannot be blank.");
+        }
+
         AppUser user = currentUserService.get();
         String title = requestedTitle.trim().replaceAll("\\s+", " ");
         String normalizedTitle = title.toLowerCase(Locale.ROOT);
         Game game = gameRepository.findByNormalizedTitle(normalizedTitle)
-                .orElseGet(() -> gameRepository.save(new Game(title, normalizedTitle)));
+                .orElseGet(() -> gameRepository.save(
+                        new Game(title, normalizedTitle, genre, multiplayerSupport, maxPlayers)));
 
         if (userGameRepository.existsByUserIdAndGameId(user.getId(), game.getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already in your library.");
@@ -59,6 +69,7 @@ public class LibraryService {
     }
 
     private GameResponse toResponse(Game game) {
-        return new GameResponse(game.getId(), game.getTitle());
+        return new GameResponse(game.getId(), game.getTitle(), game.getGenre(),
+                game.isMultiplayerSupport(), game.getMaxPlayers());
     }
 }

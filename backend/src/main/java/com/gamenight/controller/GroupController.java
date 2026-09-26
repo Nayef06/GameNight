@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,8 +50,11 @@ public class GroupController {
     }
 
     @GetMapping("/{groupId}/shared-games")
-    public List<GameResponse> getSharedGames(@PathVariable Long groupId) {
-        return groupService.getSharedGames(groupId);
+    public List<GameResponse> getSharedGames(
+            @PathVariable Long groupId,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) Boolean multiplayerSupport,
+            @RequestParam(required = false) Integer minPlayers) {
+        return groupService.getSharedGames(groupId, genre, multiplayerSupport, minPlayers);
     }
 }
-

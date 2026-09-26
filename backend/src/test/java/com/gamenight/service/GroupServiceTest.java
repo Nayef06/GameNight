@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -86,8 +87,7 @@ class GroupServiceTest {
         when(membershipRepository.findByGroupIdOrderByUserUsernameAsc(10L))
                 .thenReturn(List.of(firstMembership, secondMembership));
 
-        Game terraria = game(100L);
-        when(terraria.getTitle()).thenReturn("Terraria");
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
         Game portal = game(101L);
         UserGame firstTerraria = ownership(terraria);
         UserGame secondTerraria = ownership(terraria);
@@ -98,7 +98,8 @@ class GroupServiceTest {
 
         List<GameResponse> result = groupService.getSharedGames(10L);
 
-        assertThat(result).containsExactly(new GameResponse(100L, "Terraria"));
+        assertThat(result).containsExactly(
+                new GameResponse(100L, "Terraria", "Survival", true, 8));
     }
 
     @Test
@@ -109,10 +110,8 @@ class GroupServiceTest {
         when(membershipRepository.findByGroupIdOrderByUserUsernameAsc(10L))
                 .thenReturn(List.of(membership));
 
-        Game terraria = game(100L);
-        when(terraria.getTitle()).thenReturn("Terraria");
-        Game minecraft = game(101L);
-        when(minecraft.getTitle()).thenReturn("Minecraft");
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        Game minecraft = game(101L, "Minecraft", "Survival", true, 8);
         UserGame terrariaOwnership = ownership(terraria);
         UserGame minecraftOwnership = ownership(minecraft);
         when(userGameRepository.findByUserIdIn(List.of(1L)))
@@ -121,9 +120,39 @@ class GroupServiceTest {
         List<GameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new GameResponse(101L, "Minecraft"),
-                new GameResponse(100L, "Terraria")
+                new GameResponse(101L, "Minecraft", "Survival", true, 8),
+                new GameResponse(100L, "Terraria", "Survival", true, 8)
         );
+    }
+
+    @Test
+    void sharedGamesCanBeFilteredByGenre() {
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        Game portal = game(101L, "Portal", "Puzzle", false, 1);
+        prepareOneMemberGames(10L, terraria, portal);
+
+        assertThat(groupService.getSharedGames(10L, "survival", null, null))
+                .containsExactly(new GameResponse(100L, "Terraria", "Survival", true, 8));
+    }
+
+    @Test
+    void sharedGamesCanBeFilteredByMultiplayerSupport() {
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        Game portal = game(101L, "Portal", "Puzzle", false, 1);
+        prepareOneMemberGames(10L, terraria, portal);
+
+        assertThat(groupService.getSharedGames(10L, null, false, null))
+                .containsExactly(new GameResponse(101L, "Portal", "Puzzle", false, 1));
+    }
+
+    @Test
+    void sharedGamesCanBeFilteredByRequiredPlayerCount() {
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        Game portal = game(101L, "Portal", "Puzzle", true, 2);
+        prepareOneMemberGames(10L, terraria, portal);
+
+        assertThat(groupService.getSharedGames(10L, null, null, 4))
+                .containsExactly(new GameResponse(100L, "Terraria", "Survival", true, 8));
     }
 
     @Test
@@ -174,6 +203,17 @@ class GroupServiceTest {
         when(membershipRepository.existsByUserIdAndGroupId(currentUser.getId(), groupId)).thenReturn(true);
     }
 
+    private void prepareOneMemberGames(Long groupId, Game... games) {
+        AppUser currentUser = user(1L);
+        allowGroupAccess(currentUser, groupId);
+        GroupMembership groupMembership = membership(currentUser);
+        List<UserGame> ownerships = java.util.Arrays.stream(games).map(this::ownership).toList();
+        when(membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId))
+                .thenReturn(List.of(groupMembership));
+        when(userGameRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(ownerships);
+    }
+
     private AppUser user(Long id) {
         AppUser user = mock(AppUser.class);
         when(user.getId()).thenReturn(id);
@@ -189,6 +229,15 @@ class GroupServiceTest {
     private Game game(Long id) {
         Game game = mock(Game.class);
         when(game.getId()).thenReturn(id);
+        return game;
+    }
+
+    private Game game(Long id, String title, String genre, boolean multiplayerSupport, int maxPlayers) {
+        Game game = game(id);
+        lenient().when(game.getTitle()).thenReturn(title);
+        lenient().when(game.getGenre()).thenReturn(genre);
+        lenient().when(game.isMultiplayerSupport()).thenReturn(multiplayerSupport);
+        lenient().when(game.getMaxPlayers()).thenReturn(maxPlayers);
         return game;
     }
 

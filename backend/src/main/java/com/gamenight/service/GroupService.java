@@ -84,6 +84,17 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public List<GameResponse> getSharedGames(Long groupId) {
+        return getSharedGames(groupId, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GameResponse> getSharedGames(Long groupId, String requestedGenre,
+                                             Boolean multiplayerSupport, Integer minPlayers) {
+        if (minPlayers != null && minPlayers < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Minimum player capacity must be at least 1.");
+        }
+
         AppUser user = currentUserService.get();
         requireGroupMember(groupId, user);
         List<Long> memberIds = membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId).stream()
@@ -101,10 +112,16 @@ public class GroupService {
             games.put(game.getId(), game);
         }
 
+        String genre = requestedGenre == null ? null : requestedGenre.trim();
         return games.values().stream()
                 .filter(game -> ownerCounts.get(game.getId()) == memberIds.size())
+                .filter(game -> genre == null || genre.isBlank() || genre.equalsIgnoreCase(game.getGenre()))
+                .filter(game -> multiplayerSupport == null
+                        || multiplayerSupport == game.isMultiplayerSupport())
+                .filter(game -> minPlayers == null || game.getMaxPlayers() >= minPlayers)
                 .sorted(Comparator.comparing(Game::getTitle, String.CASE_INSENSITIVE_ORDER))
-                .map(game -> new GameResponse(game.getId(), game.getTitle()))
+                .map(game -> new GameResponse(game.getId(), game.getTitle(), game.getGenre(),
+                        game.isMultiplayerSupport(), game.getMaxPlayers()))
                 .toList();
     }
 

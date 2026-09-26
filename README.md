@@ -1,6 +1,6 @@
 # GameNight
 
-GameNight is a deliberately small semester-project prototype. Users manually list the games they own, create or join groups, and see the games owned by every member of a group.
+GameNight is a deliberately small semester-project prototype. Users manually list the games they own with basic metadata, create or join groups, and see and filter the games owned by every member of a group.
 
 This repository implements only that flow. It has no external game APIs, recommendations, voting, chat, or other social features.
 
@@ -71,13 +71,14 @@ Use a new Base64-encoded secret of at least 32 bytes outside local development.
 Use two browser profiles (or a normal and private window) so both users can stay logged in.
 
 1. Register `Nayef` with any password of at least six characters. Usernames are stored in lowercase, so the UI will show `nayef`.
-2. Add `Terraria`, `Minecraft`, and `Lethal Company` to Nayef's library.
+2. Add `Terraria`, `Minecraft`, and `Lethal Company` to Nayef's library, including a genre, multiplayer support, and maximum player count for each game.
 3. Create a group named `Friday Night Group` and copy its six-character join code.
 4. In the other browser profile, register `Alex` and add `Terraria`, `Lethal Company`, and `Valorant`.
 5. Open **My Groups**, join with the copied code, and open **Friday Night Group**.
 6. Confirm both `alex` and `nayef` are listed under **Members**.
-7. Confirm **Games Everyone Owns:** lists only `Lethal Company` and `Terraria`.
-8. Refresh the page. The members and shared games should still be present because they are stored in PostgreSQL.
+7. Confirm **Shared Games** lists only `Lethal Company` and `Terraria`, then try the genre, multiplayer, and minimum-player filters.
+8. Clear the filters and confirm both shared games return.
+9. Refresh the page. The members and shared games should still be present because they are stored in PostgreSQL.
 
 ## API
 
@@ -88,15 +89,17 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 | POST | `/api/auth/register` | `{ "username": "alex", "password": "secret1" }` |
 | POST | `/api/auth/login` | `{ "username": "alex", "password": "secret1" }` |
 | GET | `/api/library` | — |
-| POST | `/api/library` | `{ "title": "Terraria" }` |
+| POST | `/api/library` | `{ "title": "Terraria", "genre": "Survival", "multiplayerSupport": true, "maxPlayers": 8 }` |
 | DELETE | `/api/library/{gameId}` | — |
 | GET | `/api/groups` | — |
 | POST | `/api/groups` | `{ "name": "Friday Night Group" }` |
 | POST | `/api/groups/join` | `{ "joinCode": "AB12CD" }` |
 | GET | `/api/groups/{groupId}` | — |
-| GET | `/api/groups/{groupId}/shared-games` | — |
+| GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: `genre`, `multiplayerSupport`, `minPlayers` |
 
 Only members can view a group's details and shared games. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
+
+On startup, JPA adds the metadata columns when upgrading an existing Layer 1 database. Existing games receive the safe defaults `Other`, `false`, and `1`.
 
 ## Checks
 

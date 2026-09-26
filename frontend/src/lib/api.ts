@@ -26,11 +26,16 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
 }
 
 export type AuthResponse = { token: string; username: string };
-export type Game = { id: number; title: string };
+export type Game = {
+  id: number;
+  title: string;
+  genre: string;
+  multiplayerSupport: boolean;
+  maxPlayers: number;
+};
 export type Group = { id: number; name: string; joinCode: string };
 export type GroupDetails = Group & {
   createdBy: string;
   createdAt: string;
   members: string[];
 };
-

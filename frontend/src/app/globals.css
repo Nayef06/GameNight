@@ -32,7 +32,7 @@ h1 { margin-top: 0; }
 h2 { font-size: 1.15rem; margin-top: 28px; }
 form { display: grid; gap: 14px; }
 label { display: grid; gap: 5px; font-weight: 600; }
-input { width: 100%; padding: 10px; border: 1px solid #aeb5c0; border-radius: 4px; font: inherit; }
+input, select { width: 100%; padding: 10px; border: 1px solid #aeb5c0; border-radius: 4px; background: white; font: inherit; }
 button, .button { border: 0; border-radius: 4px; background: var(--accent); color: white; padding: 10px 16px; font: inherit; cursor: pointer; text-decoration: none; }
 button:disabled { opacity: .6; cursor: default; }
 .secondary { background: #e6e9f8; color: #293986; }
@@ -40,6 +40,9 @@ button:disabled { opacity: .6; cursor: default; }
 .actions { display: flex; justify-content: center; gap: 12px; margin-top: 24px; }
 .inline-form { display: grid; grid-template-columns: 1fr auto; }
 .inline-label { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
+.game-form { max-width: 460px; }
+.filter-form { grid-template-columns: repeat(3, 1fr); align-items: end; margin: 16px 0 24px; }
+.filter-actions { display: flex; gap: 10px; grid-column: 1 / -1; }
 .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 28px; }
 .two-columns h2 { margin-top: 0; }
 .item-list, .simple-list { list-style: none; margin: 16px 0 0; padding: 0; }
@@ -49,6 +52,7 @@ button:disabled { opacity: .6; cursor: default; }
 .danger { background: #a63b3b; }
 .error { color: #a32020; background: #fdecec; padding: 9px 12px; border-radius: 4px; }
 .muted { color: var(--muted); font-size: .9rem; }
+.game-details { color: var(--muted); font-size: .9rem; margin-top: 2px; }
 .join-code, .code-input { letter-spacing: .12em; }
 hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
 
@@ -59,5 +63,6 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
   .two-columns { grid-template-columns: 1fr; }
   .inline-form { grid-template-columns: 1fr; }
   .inline-label { grid-template-columns: 1fr; }
+  .filter-form { grid-template-columns: 1fr; }
   .item-list li { align-items: flex-start; flex-direction: column; padding: 10px 0; }
 }

@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -39,16 +40,32 @@ class LibraryServiceTest {
     @Test
     void userCanAddAGame() {
         AppUser user = user(1L);
-        Game game = game(10L, "Lethal Company");
+        Game game = game(10L, "Lethal Company", "Survival", true, 4);
         when(currentUserService.get()).thenReturn(user);
         when(gameRepository.findByNormalizedTitle("lethal company")).thenReturn(Optional.empty());
         when(gameRepository.save(any(Game.class))).thenReturn(game);
         when(userGameRepository.existsByUserIdAndGameId(1L, 10L)).thenReturn(false);
 
-        GameResponse response = libraryService.addGame("  Lethal   Company ");
+        GameResponse response = libraryService.addGame(
+                "  Lethal   Company ", " Survival ", true, 4);
 
-        assertThat(response).isEqualTo(new GameResponse(10L, "Lethal Company"));
+        assertThat(response).isEqualTo(new GameResponse(10L, "Lethal Company", "Survival", true, 4));
+        ArgumentCaptor<Game> gameCaptor = ArgumentCaptor.forClass(Game.class);
+        verify(gameRepository).save(gameCaptor.capture());
+        assertThat(gameCaptor.getValue().getTitle()).isEqualTo("Lethal Company");
+        assertThat(gameCaptor.getValue().getGenre()).isEqualTo("Survival");
+        assertThat(gameCaptor.getValue().isMultiplayerSupport()).isTrue();
+        assertThat(gameCaptor.getValue().getMaxPlayers()).isEqualTo(4);
         verify(userGameRepository).save(any(UserGame.class));
+    }
+
+    @Test
+    void invalidMaximumPlayersIsRejected() {
+        assertThatThrownBy(() -> libraryService.addGame("Terraria", "Survival", true, 0))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Maximum players must be at least 1.");
+        verify(gameRepository, never()).save(any());
+        verify(userGameRepository, never()).save(any());
     }
 
     @Test
@@ -60,7 +77,7 @@ class LibraryServiceTest {
         when(gameRepository.findByNormalizedTitle("terraria")).thenReturn(Optional.of(game));
         when(userGameRepository.existsByUserIdAndGameId(1L, 10L)).thenReturn(true);
 
-        assertThatThrownBy(() -> libraryService.addGame("TERRARIA"))
+        assertThatThrownBy(() -> libraryService.addGame("TERRARIA", "Survival", true, 8))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Game is already in your library.");
         verify(userGameRepository, never()).save(any());
@@ -72,10 +89,13 @@ class LibraryServiceTest {
         return user;
     }
 
-    private Game game(Long id, String title) {
+    private Game game(Long id, String title, String genre, boolean multiplayerSupport, int maxPlayers) {
         Game game = mock(Game.class);
         when(game.getId()).thenReturn(id);
         when(game.getTitle()).thenReturn(title);
+        when(game.getGenre()).thenReturn(genre);
+        when(game.isMultiplayerSupport()).thenReturn(multiplayerSupport);
+        when(game.getMaxPlayers()).thenReturn(maxPlayers);
         return game;
     }
 }
