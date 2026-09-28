@@ -11,14 +11,15 @@ public final class GroupDtos {
 
     public record CreateGroupRequest(@NotBlank @Size(max = 80) String name) {}
     public record JoinGroupRequest(@NotBlank @Size(min = 6, max = 6) String joinCode) {}
-    public record GroupSummary(Long id, String name, String joinCode) {}
+    public record GroupSummary(Long id, String name, String joinCode, long memberCount) {}
+    public record GroupMember(Long id, String username, boolean creator) {}
     public record GroupDetails(
             Long id,
             String name,
             String joinCode,
             String createdBy,
             Instant createdAt,
-            List<String> members
+            boolean currentUserIsCreator,
+            List<GroupMember> members
     ) {}
 }
-

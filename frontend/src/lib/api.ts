@@ -33,9 +33,14 @@ export type Game = {
   multiplayerSupport: boolean;
   maxPlayers: number;
 };
-export type Group = { id: number; name: string; joinCode: string };
-export type GroupDetails = Group & {
+export type Group = { id: number; name: string; joinCode: string; memberCount: number };
+export type GroupMember = { id: number; username: string; creator: boolean };
+export type GroupDetails = {
+  id: number;
+  name: string;
+  joinCode: string;
   createdBy: string;
   createdAt: string;
-  members: string[];
+  currentUserIsCreator: boolean;
+  members: GroupMember[];
 };

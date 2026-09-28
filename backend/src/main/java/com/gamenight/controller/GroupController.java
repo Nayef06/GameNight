@@ -7,6 +7,7 @@ import com.gamenight.dto.GroupDtos.JoinGroupRequest;
 import com.gamenight.dto.LibraryDtos.GameResponse;
 import com.gamenight.service.GroupService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,6 +48,18 @@ public class GroupController {
     @GetMapping("/{groupId}")
     public GroupDetails getDetails(@PathVariable Long groupId) {
         return groupService.getDetails(groupId);
+    }
+
+    @DeleteMapping("/{groupId}/members/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeMember(@PathVariable Long groupId, @PathVariable Long userId) {
+        groupService.removeMember(groupId, userId);
+    }
+
+    @PostMapping("/{groupId}/leave")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void leave(@PathVariable Long groupId) {
+        groupService.leave(groupId);
     }
 
     @GetMapping("/{groupId}/shared-games")

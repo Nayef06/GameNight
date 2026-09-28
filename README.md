@@ -95,9 +95,11 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 | POST | `/api/groups` | `{ "name": "Friday Night Group" }` |
 | POST | `/api/groups/join` | `{ "joinCode": "AB12CD" }` |
 | GET | `/api/groups/{groupId}` | — |
+| DELETE | `/api/groups/{groupId}/members/{userId}` | — |
+| POST | `/api/groups/{groupId}/leave` | — |
 | GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: `genre`, `multiplayerSupport`, `minPlayers` |
 
-Only members can view a group's details and shared games. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
+Only members can view a group's details and shared games. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
 
 On startup, JPA adds the metadata columns when upgrading an existing Layer 1 database. Existing games receive the safe defaults `Other`, `false`, and `1`.
 

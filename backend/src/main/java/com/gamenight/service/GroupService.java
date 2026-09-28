@@ -1,6 +1,7 @@
 package com.gamenight.service;
 
 import com.gamenight.dto.GroupDtos.GroupDetails;
+import com.gamenight.dto.GroupDtos.GroupMember;
 import com.gamenight.dto.GroupDtos.GroupSummary;
 import com.gamenight.dto.LibraryDtos.GameResponse;
 import com.gamenight.model.AppUser;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class GroupService {
@@ -75,11 +77,49 @@ public class GroupService {
     public GroupDetails getDetails(Long groupId) {
         AppUser user = currentUserService.get();
         GameGroup group = requireGroupMember(groupId, user);
-        List<String> members = membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId).stream()
-                .map(membership -> membership.getUser().getUsername())
+        Long creatorId = group.getCreatedBy().getId();
+        List<GroupMember> members = membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId).stream()
+                .map(membership -> new GroupMember(
+                        membership.getUser().getId(),
+                        membership.getUser().getUsername(),
+                        Objects.equals(membership.getUser().getId(), creatorId)))
                 .toList();
         return new GroupDetails(group.getId(), group.getName(), group.getJoinCode(),
-                group.getCreatedBy().getUsername(), group.getCreatedAt(), members);
+                group.getCreatedBy().getUsername(), group.getCreatedAt(),
+                Objects.equals(user.getId(), creatorId), members);
+    }
+
+    @Transactional
+    public void removeMember(Long groupId, Long memberUserId) {
+        AppUser user = currentUserService.get();
+        GameGroup group = requireGroupMember(groupId, user);
+        Long creatorId = group.getCreatedBy().getId();
+
+        if (!Objects.equals(user.getId(), creatorId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only the group creator can remove members.");
+        }
+        if (Objects.equals(memberUserId, creatorId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The group creator cannot be removed.");
+        }
+        if (!membershipRepository.existsByUserIdAndGroupId(memberUserId, groupId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Member not found in this group.");
+        }
+
+        membershipRepository.deleteByUserIdAndGroupId(memberUserId, groupId);
+    }
+
+    @Transactional
+    public void leave(Long groupId) {
+        AppUser user = currentUserService.get();
+        GameGroup group = requireGroupMember(groupId, user);
+        if (Objects.equals(user.getId(), group.getCreatedBy().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The group creator cannot leave the group.");
+        }
+        membershipRepository.deleteByUserIdAndGroupId(user.getId(), groupId);
     }
 
     @Transactional(readOnly = true)
@@ -148,6 +188,7 @@ public class GroupService {
     }
 
     private GroupSummary toSummary(GameGroup group) {
-        return new GroupSummary(group.getId(), group.getName(), group.getJoinCode());
+        return new GroupSummary(group.getId(), group.getName(), group.getJoinCode(),
+                membershipRepository.countByGroupId(group.getId()));
     }
 }

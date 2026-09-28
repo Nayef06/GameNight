@@ -18,12 +18,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -72,6 +74,125 @@ class GroupServiceTest {
         assertThat(result.name()).isEqualTo("Friday Night Group");
         assertThat(result.joinCode()).isEqualTo("ABC234");
         verify(membershipRepository).save(any(GroupMembership.class));
+    }
+
+    @Test
+    void groupCreatorCanRemoveAnotherMember() {
+        AppUser creator = user(1L);
+        GameGroup group = groupOwnedBy(creator);
+        when(currentUserService.get()).thenReturn(creator);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(1L, 10L)).thenReturn(true);
+        when(membershipRepository.existsByUserIdAndGroupId(2L, 10L)).thenReturn(true);
+
+        groupService.removeMember(10L, 2L);
+
+        verify(membershipRepository).deleteByUserIdAndGroupId(2L, 10L);
+    }
+
+    @Test
+    void normalMemberCannotRemoveAnotherMember() {
+        AppUser creator = user(1L);
+        AppUser normalMember = user(2L);
+        GameGroup group = groupOwnedBy(creator);
+        when(currentUserService.get()).thenReturn(normalMember);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(2L, 10L)).thenReturn(true);
+
+        assertThatThrownBy(() -> groupService.removeMember(10L, 3L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Only the group creator can remove members.");
+        verify(membershipRepository, never()).deleteByUserIdAndGroupId(any(), any());
+    }
+
+    @Test
+    void removedMemberNoLongerBelongsToTheGroup() {
+        AppUser creator = user(1L);
+        GameGroup group = groupOwnedBy(creator);
+        AtomicBoolean removed = new AtomicBoolean(false);
+        when(currentUserService.get()).thenReturn(creator);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(1L, 10L)).thenReturn(true);
+        when(membershipRepository.existsByUserIdAndGroupId(2L, 10L))
+                .thenAnswer(invocation -> !removed.get());
+        when(membershipRepository.deleteByUserIdAndGroupId(2L, 10L)).thenAnswer(invocation -> {
+            removed.set(true);
+            return 1L;
+        });
+
+        groupService.removeMember(10L, 2L);
+
+        assertThat(membershipRepository.existsByUserIdAndGroupId(2L, 10L)).isFalse();
+    }
+
+    @Test
+    void normalMemberCanLeaveAGroup() {
+        AppUser creator = user(1L);
+        AppUser normalMember = user(2L);
+        GameGroup group = groupOwnedBy(creator);
+        when(currentUserService.get()).thenReturn(normalMember);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(2L, 10L)).thenReturn(true);
+
+        groupService.leave(10L);
+
+        verify(membershipRepository).deleteByUserIdAndGroupId(2L, 10L);
+    }
+
+    @Test
+    void groupCreatorCannotLeaveTheirOwnGroup() {
+        AppUser creator = user(1L);
+        GameGroup group = groupOwnedBy(creator);
+        when(currentUserService.get()).thenReturn(creator);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(1L, 10L)).thenReturn(true);
+
+        assertThatThrownBy(() -> groupService.leave(10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("The group creator cannot leave the group.");
+        verify(membershipRepository, never()).deleteByUserIdAndGroupId(any(), any());
+    }
+
+    @Test
+    void sharedGamesAreRecomputedAfterMembershipChanges() {
+        AppUser creator = user(1L);
+        AppUser secondUser = user(2L);
+        GameGroup group = groupOwnedBy(creator);
+        AtomicBoolean removed = new AtomicBoolean(false);
+        when(currentUserService.get()).thenReturn(creator);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(membershipRepository.existsByUserIdAndGroupId(1L, 10L)).thenReturn(true);
+        when(membershipRepository.existsByUserIdAndGroupId(2L, 10L))
+                .thenAnswer(invocation -> !removed.get());
+        when(membershipRepository.deleteByUserIdAndGroupId(2L, 10L)).thenAnswer(invocation -> {
+            removed.set(true);
+            return 1L;
+        });
+
+        GroupMembership creatorMembership = membership(creator);
+        GroupMembership secondMembership = membership(secondUser);
+        when(membershipRepository.findByGroupIdOrderByUserUsernameAsc(10L))
+                .thenAnswer(invocation -> removed.get()
+                        ? List.of(creatorMembership)
+                        : List.of(creatorMembership, secondMembership));
+
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        Game minecraft = game(101L, "Minecraft", "Survival", true, 8);
+        UserGame creatorTerraria = ownership(terraria);
+        UserGame secondTerraria = ownership(terraria);
+        UserGame creatorMinecraft = ownership(minecraft);
+        when(userGameRepository.findByUserIdIn(List.of(1L, 2L)))
+                .thenReturn(List.of(creatorTerraria, secondTerraria, creatorMinecraft));
+        when(userGameRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(List.of(creatorTerraria, creatorMinecraft));
+
+        assertThat(groupService.getSharedGames(10L)).extracting(GameResponse::title)
+                .containsExactly("Terraria");
+
+        groupService.removeMember(10L, 2L);
+
+        assertThat(groupService.getSharedGames(10L)).extracting(GameResponse::title)
+                .containsExactly("Minecraft", "Terraria");
     }
 
     @Test
@@ -218,6 +339,12 @@ class GroupServiceTest {
         AppUser user = mock(AppUser.class);
         when(user.getId()).thenReturn(id);
         return user;
+    }
+
+    private GameGroup groupOwnedBy(AppUser creator) {
+        GameGroup group = mock(GameGroup.class);
+        when(group.getCreatedBy()).thenReturn(creator);
+        return group;
     }
 
     private GroupMembership membership(AppUser user) {

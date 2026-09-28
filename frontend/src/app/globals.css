@@ -51,9 +51,12 @@ button:disabled { opacity: .6; cursor: default; }
 .small { padding: 6px 10px; font-size: .9rem; }
 .danger { background: #a63b3b; }
 .error { color: #a32020; background: #fdecec; padding: 9px 12px; border-radius: 4px; }
+.success { color: #245b2a; background: #edf7ed; padding: 9px 12px; border-radius: 4px; }
 .muted { color: var(--muted); font-size: .9rem; }
 .game-details { color: var(--muted); font-size: .9rem; margin-top: 2px; }
 .join-code, .code-input { letter-spacing: .12em; }
+.member-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.section-action { margin-top: 16px; }
 hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
 
 @media (max-width: 650px) {

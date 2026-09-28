@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api, Game, GroupDetails } from "@/lib/api";
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [group, setGroup] = useState<GroupDetails | null>(null);
   const [sharedGames, setSharedGames] = useState<Game[]>([]);
   const [genre, setGenre] = useState("");
@@ -15,6 +16,7 @@ export default function GroupPage() {
   const [minPlayers, setMinPlayers] = useState("");
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const loadSharedGames = useCallback(async (query = "") => {
     setSharedGames(await api<Game[]>(`/groups/${id}/shared-games${query}`));
@@ -39,6 +41,7 @@ export default function GroupPage() {
   async function applyFilters(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setMessage("");
     const parameters = new URLSearchParams();
     if (genre) parameters.set("genre", genre);
     if (multiplayerSupport) parameters.set("multiplayerSupport", multiplayerSupport);
@@ -56,6 +59,7 @@ export default function GroupPage() {
     setMultiplayerSupport("");
     setMinPlayers("");
     setError("");
+    setMessage("");
     try {
       await loadSharedGames();
       setFiltersApplied(false);
@@ -64,19 +68,71 @@ export default function GroupPage() {
     }
   }
 
+  function selectedFilterQuery() {
+    const parameters = new URLSearchParams();
+    if (genre) parameters.set("genre", genre);
+    if (multiplayerSupport) parameters.set("multiplayerSupport", multiplayerSupport);
+    if (minPlayers) parameters.set("minPlayers", minPlayers);
+    return parameters.size ? `?${parameters.toString()}` : "";
+  }
+
+  async function removeMember(userId: number, username: string) {
+    if (!window.confirm(`Remove ${username} from this group?`)) return;
+    setError("");
+    setMessage("");
+    try {
+      await api<void>(`/groups/${id}/members/${userId}`, { method: "DELETE" });
+      const [details] = await Promise.all([
+        api<GroupDetails>(`/groups/${id}`),
+        loadSharedGames(selectedFilterQuery()),
+      ]);
+      setGroup(details);
+      setMessage("Member removed.");
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Could not remove member");
+    }
+  }
+
+  async function leaveGroup() {
+    if (!window.confirm("Leave this group?")) return;
+    setError("");
+    setMessage("");
+    try {
+      await api<void>(`/groups/${id}/leave`, { method: "POST" });
+      router.push("/groups?left=true");
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Could not leave group");
+    }
+  }
+
   return (
     <RequireAuth>
       <section className="card">
         <Link href="/groups">Back to groups</Link>
         {error && <p className="error">{error}</p>}
+        {message && <p className="success">{message}</p>}
         {!group ? !error && <p>Loading group...</p> : (
           <>
             <h1>{group.name}</h1>
             <p>Join code: <strong className="join-code">{group.joinCode}</strong></p>
             <h2>Members</h2>
             <ul className="simple-list">
-              {group.members.map((member) => <li key={member}>{member}</li>)}
+              {group.members.map((member) => (
+                <li className="member-row" key={member.id}>
+                  <span>{member.username}{member.creator ? " (Creator)" : ""}</span>
+                  {group.currentUserIsCreator && !member.creator && (
+                    <button className="small danger" onClick={() => removeMember(member.id, member.username)}>
+                      Remove
+                    </button>
+                  )}
+                </li>
+              ))}
             </ul>
+            {group.currentUserIsCreator ? (
+              <p className="muted">The group creator cannot leave the group.</p>
+            ) : (
+              <button className="danger section-action" onClick={leaveGroup}>Leave Group</button>
+            )}
             <hr />
             <h2>Shared Games</h2>
             <p className="muted">Games owned by every member of this group.</p>

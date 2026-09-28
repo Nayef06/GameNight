@@ -11,6 +11,7 @@ export default function LibraryPage() {
   const [multiplayerSupport, setMultiplayerSupport] = useState("true");
   const [maxPlayers, setMaxPlayers] = useState("2");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const loadGames = useCallback(async () => {
     try {
@@ -25,6 +26,7 @@ export default function LibraryPage() {
   async function addGame(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setMessage("");
     try {
       await api<Game>("/library", {
         method: "POST",
@@ -40,6 +42,7 @@ export default function LibraryPage() {
       setMultiplayerSupport("true");
       setMaxPlayers("2");
       await loadGames();
+      setMessage("Game added.");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not add game");
     }
@@ -47,9 +50,11 @@ export default function LibraryPage() {
 
   async function removeGame(gameId: number) {
     setError("");
+    setMessage("");
     try {
       await api<void>(`/library/${gameId}`, { method: "DELETE" });
       await loadGames();
+      setMessage("Game removed.");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not remove game");
     }
@@ -85,15 +90,16 @@ export default function LibraryPage() {
           <button>Add Game</button>
         </form>
         {error && <p className="error">{error}</p>}
+        {message && <p className="success">{message}</p>}
         <h2>My Games</h2>
-        {games.length === 0 ? <p>Your library is empty.</p> : (
+        {games.length === 0 ? <p>You have not added any games yet.</p> : (
           <ul className="item-list">
             {games.map((game) => (
               <li key={game.id}>
                 <div>
                   <strong>{game.title}</strong>
                   <div className="game-details">
-                    Genre: {game.genre} | Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} | Max Players: {game.maxPlayers}
+                    {game.genre} | {game.multiplayerSupport ? "Multiplayer" : "Single Player"} | Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}
                   </div>
                 </div>
                 <button className="small danger" onClick={() => removeGame(game.id)}>Remove</button>

@@ -10,6 +10,7 @@ export default function GroupsPage() {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const loadGroups = useCallback(async () => {
     try {
@@ -19,15 +20,24 @@ export default function GroupsPage() {
     }
   }, []);
 
-  useEffect(() => { void loadGroups(); }, [loadGroups]);
+  useEffect(() => {
+    const parameters = new URLSearchParams(window.location.search);
+    if (parameters.get("left") === "true") {
+      setMessage("You left the group.");
+      window.history.replaceState({}, "", "/groups");
+    }
+    void loadGroups();
+  }, [loadGroups]);
 
   async function createGroup(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setMessage("");
     try {
       await api<Group>("/groups", { method: "POST", body: { name } });
       setName("");
       await loadGroups();
+      setMessage("Group created.");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not create group");
     }
@@ -36,10 +46,12 @@ export default function GroupsPage() {
   async function joinGroup(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setMessage("");
     try {
       await api<Group>("/groups/join", { method: "POST", body: { joinCode } });
       setJoinCode("");
       await loadGroups();
+      setMessage("Joined group successfully.");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not join group");
     }
@@ -50,12 +62,16 @@ export default function GroupsPage() {
       <section className="card">
         <h1>My Groups</h1>
         {error && <p className="error">{error}</p>}
-        {groups.length === 0 ? <p>You have not created or joined a group yet.</p> : (
+        {message && <p className="success">{message}</p>}
+        {groups.length === 0 ? <p>You have not joined any groups yet.</p> : (
           <ul className="item-list">
             {groups.map((group) => (
               <li key={group.id}>
-                <Link href={`/groups/${group.id}`}>{group.name}</Link>
-                <span className="muted">Join code: <strong>{group.joinCode}</strong></span>
+                <div>
+                  <strong>{group.name}</strong>
+                  <div className="muted">{group.memberCount} {group.memberCount === 1 ? "member" : "members"}</div>
+                </div>
+                <Link className="button small" href={`/groups/${group.id}`}>Open</Link>
               </li>
             ))}
           </ul>
