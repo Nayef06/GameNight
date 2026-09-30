@@ -44,3 +44,9 @@ export type GroupDetails = {
   currentUserIsCreator: boolean;
   members: GroupMember[];
 };
+export type MultiplayerPreference = "NO_PREFERENCE" | "MULTIPLAYER" | "SINGLE_PLAYER";
+export type Preferences = {
+  preferredGenres: string[];
+  multiplayerPreference: MultiplayerPreference;
+  preferredPlayerCount: number | null;
+};

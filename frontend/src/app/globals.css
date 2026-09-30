@@ -57,6 +57,14 @@ button:disabled { opacity: .6; cursor: default; }
 .join-code, .code-input { letter-spacing: .12em; }
 .member-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .section-action { margin-top: 16px; }
+.preferences-form { max-width: 520px; }
+.preferences-form fieldset { border: 1px solid var(--border); border-radius: 4px; padding: 14px; }
+.preferences-form legend { font-weight: 600; padding: 0 5px; }
+.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 18px; }
+.choice-list { display: grid; gap: 9px; }
+.choice-label { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.choice-label input { width: auto; margin: 0; }
+.player-count-label { max-width: 230px; }
 hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
 
 @media (max-width: 650px) {
@@ -67,5 +75,6 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
   .inline-form { grid-template-columns: 1fr; }
   .inline-label { grid-template-columns: 1fr; }
   .filter-form { grid-template-columns: 1fr; }
+  .checkbox-grid { grid-template-columns: 1fr; }
   .item-list li { align-items: flex-start; flex-direction: column; padding: 10px 0; }
 }

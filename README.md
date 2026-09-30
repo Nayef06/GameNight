@@ -1,6 +1,6 @@
 # GameNight
 
-GameNight is a deliberately small semester-project prototype. Users manually list the games they own with basic metadata, create or join groups, and see and filter the games owned by every member of a group.
+GameNight is a deliberately small semester-project prototype. Users manually list the games they own with basic metadata, create or join groups, see and filter the games owned by every member of a group, and save basic game preferences for future use.
 
 This repository implements only that flow. It has no external game APIs, recommendations, voting, chat, or other social features.
 
@@ -91,6 +91,8 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 | GET | `/api/library` | — |
 | POST | `/api/library` | `{ "title": "Terraria", "genre": "Survival", "multiplayerSupport": true, "maxPlayers": 8 }` |
 | DELETE | `/api/library/{gameId}` | — |
+| GET | `/api/preferences` | — |
+| PUT | `/api/preferences` | `{ "preferredGenres": ["Survival", "Shooter"], "multiplayerPreference": "MULTIPLAYER", "preferredPlayerCount": 4 }` |
 | GET | `/api/groups` | — |
 | POST | `/api/groups` | `{ "name": "Friday Night Group" }` |
 | POST | `/api/groups/join` | `{ "joinCode": "AB12CD" }` |
@@ -101,7 +103,7 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 
 Only members can view a group's details and shared games. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
 
-On startup, JPA adds the metadata columns when upgrading an existing Layer 1 database. Existing games receive the safe defaults `Other`, `false`, and `1`.
+On startup, JPA adds the metadata and preference fields when upgrading an existing database. Existing games receive the safe defaults `Other`, `false`, and `1`; users receive no preferred genres, `NO_PREFERENCE`, and no preferred player count.
 
 ## Checks
 

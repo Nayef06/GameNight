@@ -17,6 +17,8 @@ export function Nav() {
             <span className="separator">|</span>
             <Link href="/groups">My Groups</Link>
             <span className="separator">|</span>
+            <Link href="/preferences">Preferences</Link>
+            <span className="separator">|</span>
             <button className="link-button" onClick={logout}>Logout</button>
           </div>
         ) : ready ? (
