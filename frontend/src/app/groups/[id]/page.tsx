@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, Game, GroupDetails } from "@/lib/api";
+import { api, GroupDetails, SharedGame } from "@/lib/api";
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [group, setGroup] = useState<GroupDetails | null>(null);
-  const [sharedGames, setSharedGames] = useState<Game[]>([]);
+  const [sharedGames, setSharedGames] = useState<SharedGame[]>([]);
   const [genre, setGenre] = useState("");
   const [multiplayerSupport, setMultiplayerSupport] = useState("");
   const [minPlayers, setMinPlayers] = useState("");
@@ -19,7 +19,7 @@ export default function GroupPage() {
   const [message, setMessage] = useState("");
 
   const loadSharedGames = useCallback(async (query = "") => {
-    setSharedGames(await api<Game[]>(`/groups/${id}/shared-games${query}`));
+    setSharedGames(await api<SharedGame[]>(`/groups/${id}/shared-games${query}`));
   }, [id]);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function GroupPage() {
       try {
         const [details, games] = await Promise.all([
           api<GroupDetails>(`/groups/${id}`),
-          api<Game[]>(`/groups/${id}/shared-games`),
+          api<SharedGame[]>(`/groups/${id}/shared-games`),
         ]);
         setGroup(details);
         setSharedGames(games);

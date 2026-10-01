@@ -13,6 +13,14 @@ public final class GroupDtos {
     public record JoinGroupRequest(@NotBlank @Size(min = 6, max = 6) String joinCode) {}
     public record GroupSummary(Long id, String name, String joinCode, long memberCount) {}
     public record GroupMember(Long id, String username, boolean creator) {}
+    public record SharedGameResponse(
+            Long id,
+            String title,
+            String genre,
+            boolean multiplayerSupport,
+            int maxPlayers,
+            int preferenceScore
+    ) {}
     public record GroupDetails(
             Long id,
             String name,

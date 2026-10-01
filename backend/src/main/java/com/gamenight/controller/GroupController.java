@@ -4,7 +4,7 @@ import com.gamenight.dto.GroupDtos.CreateGroupRequest;
 import com.gamenight.dto.GroupDtos.GroupDetails;
 import com.gamenight.dto.GroupDtos.GroupSummary;
 import com.gamenight.dto.GroupDtos.JoinGroupRequest;
-import com.gamenight.dto.LibraryDtos.GameResponse;
+import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.service.GroupService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -63,7 +63,7 @@ public class GroupController {
     }
 
     @GetMapping("/{groupId}/shared-games")
-    public List<GameResponse> getSharedGames(
+    public List<SharedGameResponse> getSharedGames(
             @PathVariable Long groupId,
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) Boolean multiplayerSupport,

@@ -3,11 +3,12 @@ package com.gamenight.service;
 import com.gamenight.dto.GroupDtos.GroupDetails;
 import com.gamenight.dto.GroupDtos.GroupMember;
 import com.gamenight.dto.GroupDtos.GroupSummary;
-import com.gamenight.dto.LibraryDtos.GameResponse;
+import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
 import com.gamenight.model.GameGroup;
 import com.gamenight.model.GroupMembership;
+import com.gamenight.model.MultiplayerPreference;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GroupMembershipRepository;
 import com.gamenight.repository.GroupRepository;
@@ -123,13 +124,13 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
-    public List<GameResponse> getSharedGames(Long groupId) {
+    public List<SharedGameResponse> getSharedGames(Long groupId) {
         return getSharedGames(groupId, null, null, null);
     }
 
     @Transactional(readOnly = true)
-    public List<GameResponse> getSharedGames(Long groupId, String requestedGenre,
-                                             Boolean multiplayerSupport, Integer minPlayers) {
+    public List<SharedGameResponse> getSharedGames(Long groupId, String requestedGenre,
+                                                   Boolean multiplayerSupport, Integer minPlayers) {
         if (minPlayers != null && minPlayers < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Minimum player capacity must be at least 1.");
@@ -137,8 +138,11 @@ public class GroupService {
 
         AppUser user = currentUserService.get();
         requireGroupMember(groupId, user);
-        List<Long> memberIds = membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId).stream()
-                .map(membership -> membership.getUser().getId())
+        List<AppUser> groupMembers = membershipRepository.findByGroupIdOrderByUserUsernameAsc(groupId).stream()
+                .map(GroupMembership::getUser)
+                .toList();
+        List<Long> memberIds = groupMembers.stream()
+                .map(AppUser::getId)
                 .toList();
         if (memberIds.isEmpty()) {
             return List.of();
@@ -159,10 +163,37 @@ public class GroupService {
                 .filter(game -> multiplayerSupport == null
                         || multiplayerSupport == game.isMultiplayerSupport())
                 .filter(game -> minPlayers == null || game.getMaxPlayers() >= minPlayers)
-                .sorted(Comparator.comparing(Game::getTitle, String.CASE_INSENSITIVE_ORDER))
-                .map(game -> new GameResponse(game.getId(), game.getTitle(), game.getGenre(),
-                        game.isMultiplayerSupport(), game.getMaxPlayers()))
+                .map(game -> new SharedGameResponse(game.getId(), game.getTitle(), game.getGenre(),
+                        game.isMultiplayerSupport(), game.getMaxPlayers(),
+                        calculatePreferenceScore(game, groupMembers)))
+                .sorted(Comparator.comparingInt(SharedGameResponse::preferenceScore).reversed()
+                        .thenComparing(SharedGameResponse::title, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(SharedGameResponse::title))
                 .toList();
+    }
+
+    public int calculatePreferenceScore(Game game, List<AppUser> groupMembers) {
+        int score = 0;
+        for (AppUser member : groupMembers) {
+            if (member.getPreferredGenres() != null
+                    && member.getPreferredGenres().stream()
+                    .anyMatch(genre -> genre.equalsIgnoreCase(game.getGenre()))) {
+                score++;
+            }
+
+            MultiplayerPreference multiplayerPreference = member.getMultiplayerPreference();
+            if ((game.isMultiplayerSupport() && multiplayerPreference == MultiplayerPreference.MULTIPLAYER)
+                    || (!game.isMultiplayerSupport()
+                    && multiplayerPreference == MultiplayerPreference.SINGLE_PLAYER)) {
+                score++;
+            }
+
+            Integer preferredPlayerCount = member.getPreferredPlayerCount();
+            if (preferredPlayerCount != null && preferredPlayerCount <= game.getMaxPlayers()) {
+                score++;
+            }
+        }
+        return score;
     }
 
     private GameGroup requireGroupMember(Long groupId, AppUser user) {

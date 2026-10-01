@@ -1,10 +1,11 @@
 package com.gamenight.service;
 
-import com.gamenight.dto.LibraryDtos.GameResponse;
+import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
 import com.gamenight.model.GameGroup;
 import com.gamenight.model.GroupMembership;
+import com.gamenight.model.MultiplayerPreference;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GroupMembershipRepository;
 import com.gamenight.repository.GroupRepository;
@@ -18,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -186,12 +188,12 @@ class GroupServiceTest {
         when(userGameRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(List.of(creatorTerraria, creatorMinecraft));
 
-        assertThat(groupService.getSharedGames(10L)).extracting(GameResponse::title)
+        assertThat(groupService.getSharedGames(10L)).extracting(SharedGameResponse::title)
                 .containsExactly("Terraria");
 
         groupService.removeMember(10L, 2L);
 
-        assertThat(groupService.getSharedGames(10L)).extracting(GameResponse::title)
+        assertThat(groupService.getSharedGames(10L)).extracting(SharedGameResponse::title)
                 .containsExactly("Minecraft", "Terraria");
     }
 
@@ -217,10 +219,10 @@ class GroupServiceTest {
                 firstTerraria, secondTerraria, firstPortal
         ));
 
-        List<GameResponse> result = groupService.getSharedGames(10L);
+        List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new GameResponse(100L, "Terraria", "Survival", true, 8));
+                new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0));
     }
 
     @Test
@@ -238,11 +240,11 @@ class GroupServiceTest {
         when(userGameRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(List.of(terrariaOwnership, minecraftOwnership));
 
-        List<GameResponse> result = groupService.getSharedGames(10L);
+        List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new GameResponse(101L, "Minecraft", "Survival", true, 8),
-                new GameResponse(100L, "Terraria", "Survival", true, 8)
+                new SharedGameResponse(101L, "Minecraft", "Survival", true, 8, 0),
+                new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0)
         );
     }
 
@@ -253,7 +255,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, "survival", null, null))
-                .containsExactly(new GameResponse(100L, "Terraria", "Survival", true, 8));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0));
     }
 
     @Test
@@ -263,7 +265,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, false, null))
-                .containsExactly(new GameResponse(101L, "Portal", "Puzzle", false, 1));
+                .containsExactly(new SharedGameResponse(101L, "Portal", "Puzzle", false, 1, 0));
     }
 
     @Test
@@ -273,7 +275,80 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, null, 4))
-                .containsExactly(new GameResponse(100L, "Terraria", "Survival", true, 8));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0));
+    }
+
+    @Test
+    void genreMatchesIncreasePreferenceScore() {
+        AppUser member = preferenceUser(Set.of("Survival"), MultiplayerPreference.NO_PREFERENCE, null);
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+
+        assertThat(groupService.calculatePreferenceScore(terraria, List.of(member))).isEqualTo(1);
+    }
+
+    @Test
+    void multiplayerPreferenceMatchesIncreasePreferenceScore() {
+        AppUser member = preferenceUser(Set.of(), MultiplayerPreference.MULTIPLAYER, null);
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+
+        assertThat(groupService.calculatePreferenceScore(terraria, List.of(member))).isEqualTo(1);
+    }
+
+    @Test
+    void supportedPlayerCountIncreasesPreferenceScore() {
+        AppUser member = preferenceUser(Set.of(), MultiplayerPreference.NO_PREFERENCE, 4);
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+
+        assertThat(groupService.calculatePreferenceScore(terraria, List.of(member))).isEqualTo(1);
+    }
+
+    @Test
+    void gamesWithHigherPreferenceScoresAppearFirst() {
+        Game portal = game(100L, "Portal", "Puzzle", false, 1);
+        Game terraria = game(101L, "Terraria", "Survival", true, 8);
+        AppUser member = prepareOneMemberGames(10L, portal, terraria);
+        prefer(member, Set.of("Survival"), MultiplayerPreference.MULTIPLAYER, 4);
+
+        assertThat(groupService.getSharedGames(10L))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Terraria", 3),
+                        org.assertj.core.groups.Tuple.tuple("Portal", 0));
+    }
+
+    @Test
+    void tiedGamesAreSortedAlphabetically() {
+        Game zelda = game(100L, "Zelda", "Adventure", false, 1);
+        Game amongUs = game(101L, "Among Us", "Strategy", true, 15);
+        prepareOneMemberGames(10L, zelda, amongUs);
+
+        assertThat(groupService.getSharedGames(10L)).extracting(SharedGameResponse::title)
+                .containsExactly("Among Us", "Zelda");
+    }
+
+    @Test
+    void usersWithoutPreferencesDoNotBreakRanking() {
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        prepareOneMemberGames(10L, terraria);
+
+        assertThat(groupService.getSharedGames(10L))
+                .containsExactly(new SharedGameResponse(
+                        100L, "Terraria", "Survival", true, 8, 0));
+    }
+
+    @Test
+    void filteredSharedGamesRemainRankedByPreferences() {
+        Game alpha = game(100L, "Alpha", "Survival", true, 8);
+        Game zulu = game(101L, "Zulu", "Survival", true, 2);
+        Game puzzle = game(102L, "Puzzle Game", "Puzzle", true, 8);
+        AppUser member = prepareOneMemberGames(10L, zulu, puzzle, alpha);
+        prefer(member, Set.of("Survival"), MultiplayerPreference.MULTIPLAYER, 4);
+
+        assertThat(groupService.getSharedGames(10L, "Survival", null, null))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Alpha", 3),
+                        org.assertj.core.groups.Tuple.tuple("Zulu", 2));
     }
 
     @Test
@@ -324,7 +399,7 @@ class GroupServiceTest {
         when(membershipRepository.existsByUserIdAndGroupId(currentUser.getId(), groupId)).thenReturn(true);
     }
 
-    private void prepareOneMemberGames(Long groupId, Game... games) {
+    private AppUser prepareOneMemberGames(Long groupId, Game... games) {
         AppUser currentUser = user(1L);
         allowGroupAccess(currentUser, groupId);
         GroupMembership groupMembership = membership(currentUser);
@@ -333,11 +408,29 @@ class GroupServiceTest {
                 .thenReturn(List.of(groupMembership));
         when(userGameRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(ownerships);
+        return currentUser;
+    }
+
+    private AppUser preferenceUser(Set<String> genres, MultiplayerPreference multiplayerPreference,
+                                   Integer playerCount) {
+        AppUser user = new AppUser("member", "hash");
+        user.updatePreferences(genres, multiplayerPreference, playerCount);
+        return user;
+    }
+
+    private void prefer(AppUser user, Set<String> genres, MultiplayerPreference multiplayerPreference,
+                        Integer playerCount) {
+        when(user.getPreferredGenres()).thenReturn(genres);
+        when(user.getMultiplayerPreference()).thenReturn(multiplayerPreference);
+        when(user.getPreferredPlayerCount()).thenReturn(playerCount);
     }
 
     private AppUser user(Long id) {
         AppUser user = mock(AppUser.class);
         when(user.getId()).thenReturn(id);
+        lenient().when(user.getPreferredGenres()).thenReturn(Set.of());
+        lenient().when(user.getMultiplayerPreference()).thenReturn(MultiplayerPreference.NO_PREFERENCE);
+        lenient().when(user.getPreferredPlayerCount()).thenReturn(null);
         return user;
     }
 
@@ -355,7 +448,7 @@ class GroupServiceTest {
 
     private Game game(Long id) {
         Game game = mock(Game.class);
-        when(game.getId()).thenReturn(id);
+        lenient().when(game.getId()).thenReturn(id);
         return game;
     }
 

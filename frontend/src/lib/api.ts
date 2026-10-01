@@ -33,6 +33,7 @@ export type Game = {
   multiplayerSupport: boolean;
   maxPlayers: number;
 };
+export type SharedGame = Game & { preferenceScore: number };
 export type Group = { id: number; name: string; joinCode: string; memberCount: number };
 export type GroupMember = { id: number; username: string; creator: boolean };
 export type GroupDetails = {
