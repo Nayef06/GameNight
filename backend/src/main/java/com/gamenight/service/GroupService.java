@@ -7,9 +7,11 @@ import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
 import com.gamenight.model.GameGroup;
+import com.gamenight.model.GroupGameSelection;
 import com.gamenight.model.GroupMembership;
 import com.gamenight.model.MultiplayerPreference;
 import com.gamenight.model.UserGame;
+import com.gamenight.repository.GroupGameSelectionRepository;
 import com.gamenight.repository.GroupMembershipRepository;
 import com.gamenight.repository.GroupRepository;
 import com.gamenight.repository.UserGameRepository;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class GroupService {
@@ -35,14 +39,17 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMembershipRepository membershipRepository;
     private final UserGameRepository userGameRepository;
+    private final GroupGameSelectionRepository selectionRepository;
     private final SecureRandom random = new SecureRandom();
 
     public GroupService(CurrentUserService currentUserService, GroupRepository groupRepository,
-                        GroupMembershipRepository membershipRepository, UserGameRepository userGameRepository) {
+                        GroupMembershipRepository membershipRepository, UserGameRepository userGameRepository,
+                        GroupGameSelectionRepository selectionRepository) {
         this.currentUserService = currentUserService;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
         this.userGameRepository = userGameRepository;
+        this.selectionRepository = selectionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -148,6 +155,12 @@ public class GroupService {
             return List.of();
         }
 
+        Set<Long> recentlySelectedGameIds = selectionRepository
+                .findTop3ByGroupIdOrderBySelectedAtDescIdDesc(groupId).stream()
+                .map(GroupGameSelection::getGame)
+                .map(Game::getId)
+                .collect(Collectors.toSet());
+
         Map<Long, Integer> ownerCounts = new HashMap<>();
         Map<Long, Game> games = new HashMap<>();
         for (UserGame userGame : userGameRepository.findByUserIdIn(memberIds)) {
@@ -165,7 +178,8 @@ public class GroupService {
                 .filter(game -> minPlayers == null || game.getMaxPlayers() >= minPlayers)
                 .map(game -> new SharedGameResponse(game.getId(), game.getTitle(), game.getGenre(),
                         game.isMultiplayerSupport(), game.getMaxPlayers(),
-                        calculatePreferenceScore(game, groupMembers)))
+                        calculatePreferenceScore(game, groupMembers)
+                                - (recentlySelectedGameIds.contains(game.getId()) ? 2 : 0)))
                 .sorted(Comparator.comparingInt(SharedGameResponse::preferenceScore).reversed()
                         .thenComparing(SharedGameResponse::title, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(SharedGameResponse::title))

@@ -54,6 +54,9 @@ button:disabled { opacity: .6; cursor: default; }
 .success { color: #245b2a; background: #edf7ed; padding: 9px 12px; border-radius: 4px; }
 .muted { color: var(--muted); font-size: .9rem; }
 .game-details { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+.shared-game-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.shared-game-row button { flex: 0 0 auto; }
+.recent-selections { max-width: 460px; }
 .join-code, .code-input { letter-spacing: .12em; }
 .member-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .section-action { margin-top: 16px; }
@@ -77,4 +80,5 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
   .filter-form { grid-template-columns: 1fr; }
   .checkbox-grid { grid-template-columns: 1fr; }
   .item-list li { align-items: flex-start; flex-direction: column; padding: 10px 0; }
+  .shared-game-row { align-items: flex-start; flex-direction: column; }
 }

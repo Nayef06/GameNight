@@ -1,8 +1,8 @@
 # GameNight
 
-GameNight is a deliberately small semester-project prototype. Users manually list the games they own with basic metadata, create or join groups, see and filter the games owned by every member of a group, and save basic game preferences for future use.
+GameNight is a deliberately small semester-project prototype. Users manually list the games they own with basic metadata, create or join groups, see and filter the games owned by every member of a group, save basic game preferences, and mark a shared game as recently played.
 
-This repository implements only that flow. It has no external game APIs, recommendations, voting, chat, or other social features.
+This repository implements only that flow. It has no external game APIs, voting, sessions, chat, or other social features.
 
 ## Project layout
 
@@ -78,7 +78,8 @@ Use two browser profiles (or a normal and private window) so both users can stay
 6. Confirm both `alex` and `nayef` are listed under **Members**.
 7. Confirm **Shared Games** lists only `Lethal Company` and `Terraria`, then try the genre, multiplayer, and minimum-player filters.
 8. Clear the filters and confirm both shared games return.
-9. Refresh the page. The members and shared games should still be present because they are stored in PostgreSQL.
+9. Choose one of the shared games and confirm it appears under **Recently Chosen** and remains in the shared-game list with a small ranking penalty.
+10. Refresh the page. The members, shared games, and recent selection should still be present because they are stored in PostgreSQL.
 
 ## API
 
@@ -100,8 +101,10 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 | DELETE | `/api/groups/{groupId}/members/{userId}` | — |
 | POST | `/api/groups/{groupId}/leave` | — |
 | GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: `genre`, `multiplayerSupport`, `minPlayers` |
+| POST | `/api/groups/{groupId}/selections` | `{ "gameId": 12 }` |
+| GET | `/api/groups/{groupId}/selections/recent` | — |
 
-Only members can view a group's details and shared games. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
+Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. The three most recent selections receive a two-point ranking penalty without being removed. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
 
 On startup, JPA adds the metadata and preference fields when upgrading an existing database. Existing games receive the safe defaults `Other`, `false`, and `1`; users receive no preferred genres, `NO_PREFERENCE`, and no preferred player count.
 

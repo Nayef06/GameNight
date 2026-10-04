@@ -10,6 +10,6 @@ public interface UserGameRepository extends JpaRepository<UserGame, Long> {
     List<UserGame> findByUserIdOrderByGameTitleAsc(Long userId);
     List<UserGame> findByUserIdIn(List<Long> userIds);
     boolean existsByUserIdAndGameId(Long userId, Long gameId);
+    long countByGameIdAndUserIdIn(Long gameId, List<Long> userIds);
     long deleteByUserIdAndGameId(Long userId, Long gameId);
 }
-

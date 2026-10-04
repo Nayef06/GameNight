@@ -4,9 +4,11 @@ import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
 import com.gamenight.model.GameGroup;
+import com.gamenight.model.GroupGameSelection;
 import com.gamenight.model.GroupMembership;
 import com.gamenight.model.MultiplayerPreference;
 import com.gamenight.model.UserGame;
+import com.gamenight.repository.GroupGameSelectionRepository;
 import com.gamenight.repository.GroupMembershipRepository;
 import com.gamenight.repository.GroupRepository;
 import com.gamenight.repository.UserGameRepository;
@@ -24,9 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -38,12 +41,16 @@ class GroupServiceTest {
     @Mock private GroupRepository groupRepository;
     @Mock private GroupMembershipRepository membershipRepository;
     @Mock private UserGameRepository userGameRepository;
+    @Mock private GroupGameSelectionRepository selectionRepository;
 
     private GroupService groupService;
 
     @BeforeEach
     void setUp() {
-        groupService = new GroupService(currentUserService, groupRepository, membershipRepository, userGameRepository);
+        lenient().when(selectionRepository.findTop3ByGroupIdOrderBySelectedAtDescIdDesc(anyLong()))
+                .thenReturn(List.of());
+        groupService = new GroupService(currentUserService, groupRepository, membershipRepository,
+                userGameRepository, selectionRepository);
     }
 
     @Test
@@ -352,6 +359,29 @@ class GroupServiceTest {
     }
 
     @Test
+    void recentGamesLoseTwoPointsButRemainVisibleWhileOlderGamesAreUnchanged() {
+        Game alpha = game(100L, "Alpha", "Survival", true, 8);
+        Game bravo = game(101L, "Bravo", "Survival", true, 8);
+        Game charlie = game(102L, "Charlie", "Survival", true, 8);
+        Game older = game(103L, "Older", "Survival", true, 8);
+        AppUser member = prepareOneMemberGames(10L, alpha, bravo, charlie, older);
+        prefer(member, Set.of("Survival"), MultiplayerPreference.MULTIPLAYER, 4);
+        GroupGameSelection alphaSelection = selection(alpha);
+        GroupGameSelection bravoSelection = selection(bravo);
+        GroupGameSelection charlieSelection = selection(charlie);
+        when(selectionRepository.findTop3ByGroupIdOrderBySelectedAtDescIdDesc(10L))
+                .thenReturn(List.of(alphaSelection, bravoSelection, charlieSelection));
+
+        assertThat(groupService.getSharedGames(10L))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Older", 3),
+                        org.assertj.core.groups.Tuple.tuple("Alpha", 1),
+                        org.assertj.core.groups.Tuple.tuple("Bravo", 1),
+                        org.assertj.core.groups.Tuple.tuple("Charlie", 1));
+    }
+
+    @Test
     void noCommonOwnershipReturnsAnEmptyList() {
         AppUser currentUser = user(1L);
         AppUser secondUser = user(2L);
@@ -465,5 +495,11 @@ class GroupServiceTest {
         UserGame ownership = mock(UserGame.class);
         when(ownership.getGame()).thenReturn(game);
         return ownership;
+    }
+
+    private GroupGameSelection selection(Game game) {
+        GroupGameSelection selection = mock(GroupGameSelection.class);
+        when(selection.getGame()).thenReturn(game);
+        return selection;
     }
 }

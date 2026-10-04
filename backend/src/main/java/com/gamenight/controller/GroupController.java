@@ -1,10 +1,13 @@
 package com.gamenight.controller;
 
+import com.gamenight.dto.GroupDtos.CreateGameSelectionRequest;
 import com.gamenight.dto.GroupDtos.CreateGroupRequest;
+import com.gamenight.dto.GroupDtos.GameSelectionResponse;
 import com.gamenight.dto.GroupDtos.GroupDetails;
 import com.gamenight.dto.GroupDtos.GroupSummary;
 import com.gamenight.dto.GroupDtos.JoinGroupRequest;
 import com.gamenight.dto.GroupDtos.SharedGameResponse;
+import com.gamenight.service.GameSelectionService;
 import com.gamenight.service.GroupService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,9 +27,11 @@ import java.util.List;
 @RequestMapping("/api/groups")
 public class GroupController {
     private final GroupService groupService;
+    private final GameSelectionService gameSelectionService;
 
-    public GroupController(GroupService groupService) {
+    public GroupController(GroupService groupService, GameSelectionService gameSelectionService) {
         this.groupService = groupService;
+        this.gameSelectionService = gameSelectionService;
     }
 
     @GetMapping
@@ -69,5 +74,17 @@ public class GroupController {
             @RequestParam(required = false) Boolean multiplayerSupport,
             @RequestParam(required = false) Integer minPlayers) {
         return groupService.getSharedGames(groupId, genre, multiplayerSupport, minPlayers);
+    }
+
+    @PostMapping("/{groupId}/selections")
+    @ResponseStatus(HttpStatus.CREATED)
+    public GameSelectionResponse selectGame(@PathVariable Long groupId,
+                                            @Valid @RequestBody CreateGameSelectionRequest request) {
+        return gameSelectionService.select(groupId, request.gameId());
+    }
+
+    @GetMapping("/{groupId}/selections/recent")
+    public List<GameSelectionResponse> getRecentSelections(@PathVariable Long groupId) {
+        return gameSelectionService.getRecent(groupId);
     }
 }

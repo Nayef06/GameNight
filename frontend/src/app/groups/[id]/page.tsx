@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, GroupDetails, SharedGame } from "@/lib/api";
+import { api, GameSelection, GroupDetails, SharedGame } from "@/lib/api";
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [group, setGroup] = useState<GroupDetails | null>(null);
   const [sharedGames, setSharedGames] = useState<SharedGame[]>([]);
+  const [recentSelections, setRecentSelections] = useState<GameSelection[]>([]);
+  const [choosingGameId, setChoosingGameId] = useState<number | null>(null);
   const [genre, setGenre] = useState("");
   const [multiplayerSupport, setMultiplayerSupport] = useState("");
   const [minPlayers, setMinPlayers] = useState("");
@@ -22,15 +24,21 @@ export default function GroupPage() {
     setSharedGames(await api<SharedGame[]>(`/groups/${id}/shared-games${query}`));
   }, [id]);
 
+  const loadRecentSelections = useCallback(async () => {
+    setRecentSelections(await api<GameSelection[]>(`/groups/${id}/selections/recent`));
+  }, [id]);
+
   useEffect(() => {
     async function load() {
       try {
-        const [details, games] = await Promise.all([
+        const [details, games, selections] = await Promise.all([
           api<GroupDetails>(`/groups/${id}`),
           api<SharedGame[]>(`/groups/${id}/shared-games`),
+          api<GameSelection[]>(`/groups/${id}/selections/recent`),
         ]);
         setGroup(details);
         setSharedGames(games);
+        setRecentSelections(selections);
       } catch (problem) {
         setError(problem instanceof Error ? problem.message : "Could not load group");
       }
@@ -105,6 +113,27 @@ export default function GroupPage() {
     }
   }
 
+  async function chooseGame(game: SharedGame) {
+    setError("");
+    setMessage("");
+    setChoosingGameId(game.id);
+    try {
+      await api<GameSelection>(`/groups/${id}/selections`, {
+        method: "POST",
+        body: { gameId: game.id },
+      });
+      await Promise.all([
+        loadSharedGames(selectedFilterQuery()),
+        loadRecentSelections(),
+      ]);
+      setMessage(`${game.title} marked as played.`);
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Could not choose game");
+    } finally {
+      setChoosingGameId(null);
+    }
+  }
+
   return (
     <RequireAuth>
       <section className="card">
@@ -166,13 +195,29 @@ export default function GroupPage() {
               <p>{filtersApplied ? "No shared games match these filters." : "No games are currently owned by everyone in this group."}</p>
             ) : (
               <ul className="simple-list">{sharedGames.map((game) => (
-                <li key={game.id}>
-                  <strong>{game.title}</strong>
-                  <div className="game-details">
-                    Genre: {game.genre} | Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} | Max Players: {game.maxPlayers}
+                <li className="shared-game-row" key={game.id}>
+                  <div>
+                    <strong>{game.title}</strong>
+                    <div className="game-details">
+                      Genre: {game.genre} | Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} | Max Players: {game.maxPlayers}
+                    </div>
                   </div>
+                  <button type="button" className="small" disabled={choosingGameId !== null}
+                    onClick={() => chooseGame(game)}>
+                    {choosingGameId === game.id ? "Choosing..." : "Choose Game"}
+                  </button>
                 </li>
               ))}</ul>
+            )}
+            <h2>Recently Chosen</h2>
+            {recentSelections.length === 0 ? (
+              <p className="muted">No games have been chosen yet.</p>
+            ) : (
+              <ul className="simple-list recent-selections">
+                {recentSelections.map((selection) => (
+                  <li key={selection.id}>{selection.gameTitle}</li>
+                ))}
+              </ul>
             )}
           </>
         )}
