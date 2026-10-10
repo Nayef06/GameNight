@@ -41,7 +41,13 @@ button:disabled { opacity: .6; cursor: default; }
 .inline-form { display: grid; grid-template-columns: 1fr auto; }
 .inline-label { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
 .game-form { max-width: 460px; }
-.filter-form { grid-template-columns: repeat(3, 1fr); align-items: end; margin: 16px 0 24px; }
+.filter-form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; margin: 16px 0 24px; }
+.tag-filter { grid-column: 1 / -1; border: 1px solid var(--border); border-radius: 4px; padding: 12px; }
+.tag-filter legend { font-weight: 600; padding: 0 5px; }
+.tag-filter .muted { margin: 0 0 10px; }
+.tag-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-option { display: flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; background: #f7f8fb; font-weight: 400; cursor: pointer; }
+.tag-option input { width: auto; margin: 0; }
 .filter-actions { display: flex; gap: 10px; grid-column: 1 / -1; }
 .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 28px; }
 .two-columns h2 { margin-top: 0; }
@@ -54,8 +60,13 @@ button:disabled { opacity: .6; cursor: default; }
 .success { color: #245b2a; background: #edf7ed; padding: 9px 12px; border-radius: 4px; }
 .muted { color: var(--muted); font-size: .9rem; }
 .game-details { color: var(--muted); font-size: .9rem; margin-top: 2px; }
-.shared-game-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.shared-game-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 10px 12px; }
 .shared-game-row button { flex: 0 0 auto; }
+.shared-game-title, .shared-game-actions { display: flex; align-items: center; gap: 10px; }
+.shared-game-title { flex-wrap: wrap; }
+.preference-score { white-space: nowrap; font-weight: 600; }
+.top-scoring-game { background: #edf7ed; border-left: 4px solid #2e8540; }
+.top-score-label { color: #245b2a; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 .recent-selections { max-width: 460px; }
 .join-code, .code-input { letter-spacing: .12em; }
 .member-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
@@ -81,4 +92,5 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
   .checkbox-grid { grid-template-columns: 1fr; }
   .item-list li { align-items: flex-start; flex-direction: column; padding: 10px 0; }
   .shared-game-row { align-items: flex-start; flex-direction: column; }
+  .shared-game-actions { justify-content: space-between; width: 100%; }
 }

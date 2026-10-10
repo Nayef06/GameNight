@@ -13,10 +13,11 @@ export default function GroupPage() {
   const [sharedGames, setSharedGames] = useState<SharedGame[]>([]);
   const [recentSelections, setRecentSelections] = useState<GameSelection[]>([]);
   const [choosingGameId, setChoosingGameId] = useState<number | null>(null);
-  const [genre, setGenre] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [multiplayerSupport, setMultiplayerSupport] = useState("");
   const [minPlayers, setMinPlayers] = useState("");
-  const [filtersApplied, setFiltersApplied] = useState(false);
+  const [appliedFilterQuery, setAppliedFilterQuery] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -31,14 +32,16 @@ export default function GroupPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [details, games, selections] = await Promise.all([
+        const [details, games, selections, tags] = await Promise.all([
           api<GroupDetails>(`/groups/${id}`),
           api<SharedGame[]>(`/groups/${id}/shared-games`),
           api<GameSelection[]>(`/groups/${id}/selections/recent`),
+          api<string[]>("/games/tags"),
         ]);
         setGroup(details);
         setSharedGames(games);
         setRecentSelections(selections);
+        setAvailableTags(tags);
       } catch (problem) {
         setError(problem instanceof Error ? problem.message : "Could not load group");
       }
@@ -50,27 +53,24 @@ export default function GroupPage() {
     event.preventDefault();
     setError("");
     setMessage("");
-    const parameters = new URLSearchParams();
-    if (genre) parameters.set("genre", genre);
-    if (multiplayerSupport) parameters.set("multiplayerSupport", multiplayerSupport);
-    if (minPlayers) parameters.set("minPlayers", minPlayers);
+    const query = selectedFilterQuery();
     try {
-      await loadSharedGames(parameters.size ? `?${parameters.toString()}` : "");
-      setFiltersApplied(parameters.size > 0);
+      await loadSharedGames(query);
+      setAppliedFilterQuery(query);
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not filter shared games");
     }
   }
 
   async function clearFilters() {
-    setGenre("");
+    setSelectedTags([]);
     setMultiplayerSupport("");
     setMinPlayers("");
     setError("");
     setMessage("");
     try {
       await loadSharedGames();
-      setFiltersApplied(false);
+      setAppliedFilterQuery("");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not load shared games");
     }
@@ -78,10 +78,16 @@ export default function GroupPage() {
 
   function selectedFilterQuery() {
     const parameters = new URLSearchParams();
-    if (genre) parameters.set("genre", genre);
+    selectedTags.forEach((tag) => parameters.append("tags", tag));
     if (multiplayerSupport) parameters.set("multiplayerSupport", multiplayerSupport);
     if (minPlayers) parameters.set("minPlayers", minPlayers);
     return parameters.size ? `?${parameters.toString()}` : "";
+  }
+
+  function toggleTag(tag: string) {
+    setSelectedTags((current) => current.includes(tag)
+      ? current.filter((value) => value !== tag)
+      : [...current, tag]);
   }
 
   async function removeMember(userId: number, username: string) {
@@ -92,7 +98,7 @@ export default function GroupPage() {
       await api<void>(`/groups/${id}/members/${userId}`, { method: "DELETE" });
       const [details] = await Promise.all([
         api<GroupDetails>(`/groups/${id}`),
-        loadSharedGames(selectedFilterQuery()),
+        loadSharedGames(appliedFilterQuery),
       ]);
       setGroup(details);
       setMessage("Member removed.");
@@ -123,7 +129,7 @@ export default function GroupPage() {
         body: { gameId: game.id },
       });
       await Promise.all([
-        loadSharedGames(selectedFilterQuery()),
+        loadSharedGames(appliedFilterQuery),
         loadRecentSelections(),
       ]);
       setMessage(`${game.title} marked as played.`);
@@ -165,15 +171,21 @@ export default function GroupPage() {
             <hr />
             <h2>Shared Games</h2>
             <p className="muted">Games owned by every member of this group.</p>
+            <p className="muted">Each matching preferred tag adds 1 point per member. Matching multiplayer and player-count preferences add 1 point each. Recently chosen games lose 2 points. Highest scores appear first.</p>
             <form className="filter-form" onSubmit={applyFilters}>
-              <label htmlFor="filter-genre">
-                Genre
-                <select id="filter-genre" value={genre} onChange={(e) => setGenre(e.target.value)}>
-                  <option value="">All Genres</option>
-                  {['Action', 'Adventure', 'RPG', 'Strategy', 'Survival', 'Shooter', 'Sports', 'Simulation', 'Puzzle', 'Other']
-                    .map((option) => <option key={option}>{option}</option>)}
-                </select>
-              </label>
+              <fieldset className="tag-filter">
+                <legend>Tags</legend>
+                <p className="muted">Games must have every selected tag.</p>
+                <div className="tag-options">
+                  {availableTags.map((tag) => (
+                    <label className="tag-option" key={tag}>
+                      <input type="checkbox" checked={selectedTags.includes(tag)}
+                        onChange={() => toggleTag(tag)} />
+                      {tag}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <label htmlFor="filter-multiplayer">
                 Multiplayer
                 <select id="filter-multiplayer" value={multiplayerSupport} onChange={(e) => setMultiplayerSupport(e.target.value)}>
@@ -192,20 +204,26 @@ export default function GroupPage() {
               </div>
             </form>
             {sharedGames.length === 0 ? (
-              <p>{filtersApplied ? "No shared games match these filters." : "No games are currently owned by everyone in this group."}</p>
+              <p>{appliedFilterQuery ? "No shared games match these filters." : "No games are currently owned by everyone in this group."}</p>
             ) : (
               <ul className="simple-list">{sharedGames.map((game) => (
-                <li className="shared-game-row" key={game.id}>
+                <li className={`shared-game-row${game.preferenceScore === sharedGames[0].preferenceScore ? " top-scoring-game" : ""}`} key={game.id}>
                   <div>
-                    <strong>{game.title}</strong>
+                    <div className="shared-game-title">
+                      <strong>{game.title}</strong>
+                      {game.preferenceScore === sharedGames[0].preferenceScore && <span className="top-score-label">Top score</span>}
+                    </div>
                     <div className="game-details">
-                      Genre: {game.genre} | Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} | Max Players: {game.maxPlayers}
+                      Tags: {game.tags.join(", ")} | Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} | Max Players: {game.maxPlayers}
                     </div>
                   </div>
-                  <button type="button" className="small" disabled={choosingGameId !== null}
-                    onClick={() => chooseGame(game)}>
-                    {choosingGameId === game.id ? "Choosing..." : "Choose Game"}
-                  </button>
+                  <div className="shared-game-actions">
+                    <span className="preference-score">Score: <strong>{game.preferenceScore}</strong></span>
+                    <button type="button" className="small" disabled={choosingGameId !== null}
+                      onClick={() => chooseGame(game)}>
+                      {choosingGameId === game.id ? "Choosing..." : "Choose Game"}
+                    </button>
+                  </div>
                 </li>
               ))}</ul>
             )}

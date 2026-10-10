@@ -29,7 +29,7 @@ export type AuthResponse = { token: string; username: string };
 export type Game = {
   id: number;
   title: string;
-  genre: string;
+  tags: string[];
   multiplayerSupport: boolean;
   maxPlayers: number;
 };
@@ -53,7 +53,7 @@ export type GroupDetails = {
 };
 export type MultiplayerPreference = "NO_PREFERENCE" | "MULTIPLAYER" | "SINGLE_PLAYER";
 export type Preferences = {
-  preferredGenres: string[];
+  preferredTags: string[];
   multiplayerPreference: MultiplayerPreference;
   preferredPlayerCount: number | null;
 };

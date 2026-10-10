@@ -25,12 +25,15 @@ import static org.mockito.Mockito.when;
 class PreferenceServiceTest {
     @Mock private CurrentUserService currentUserService;
     @Mock private UserRepository userRepository;
+    @Mock private GameCatalog gameCatalog;
 
     private PreferenceService preferenceService;
 
     @BeforeEach
     void setUp() {
-        preferenceService = new PreferenceService(currentUserService, userRepository);
+        preferenceService = new PreferenceService(currentUserService, userRepository, gameCatalog);
+        org.mockito.Mockito.lenient().when(gameCatalog.getTags())
+                .thenReturn(List.of("Survival", "Shooter", "Strategy", "Co-op"));
     }
 
     @Test
@@ -45,7 +48,7 @@ class PreferenceServiceTest {
     }
 
     @Test
-    void userCanSaveAndRetrievePreferredGenres() {
+    void userCanSaveAndRetrievePreferredTags() {
         AppUser user = new AppUser("alex", "hash");
         when(currentUserService.get()).thenReturn(user);
 
@@ -53,7 +56,7 @@ class PreferenceServiceTest {
                 List.of("Survival", "Shooter"), "NO_PREFERENCE", null));
         PreferencesResponse response = preferenceService.getPreferences();
 
-        assertThat(response.preferredGenres()).containsExactly("Survival", "Shooter");
+        assertThat(response.preferredTags()).containsExactly("Shooter", "Survival");
         verify(userRepository).save(user);
     }
 
@@ -105,11 +108,11 @@ class PreferenceServiceTest {
     }
 
     @Test
-    void unsupportedGenreAndMultiplayerPreferenceAreRejected() {
+    void unsupportedTagAndMultiplayerPreferenceAreRejected() {
         assertThatThrownBy(() -> preferenceService.updatePreferences(request(
-                List.of("Racing"), "NO_PREFERENCE", null)))
+                List.of("Unknown"), "NO_PREFERENCE", null)))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("supported genre values");
+                .hasMessageContaining("supported tag values");
         assertThatThrownBy(() -> preferenceService.updatePreferences(request(
                 List.of(), "CO_OP_ONLY", null)))
                 .isInstanceOf(ResponseStatusException.class)

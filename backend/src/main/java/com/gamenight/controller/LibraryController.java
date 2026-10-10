@@ -33,8 +33,7 @@ public class LibraryController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public GameResponse addGame(@Valid @RequestBody AddGameRequest request) {
-        return libraryService.addGame(request.title(), request.genre(),
-                request.multiplayerSupport(), request.maxPlayers());
+        return libraryService.addGame(request.gameId());
     }
 
     @DeleteMapping("/{gameId}")

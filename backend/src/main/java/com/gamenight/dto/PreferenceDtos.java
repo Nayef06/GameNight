@@ -10,13 +10,13 @@ public final class PreferenceDtos {
     private PreferenceDtos() {}
 
     public record UpdatePreferencesRequest(
-            @NotNull(message = "must be provided") List<String> preferredGenres,
+            @NotNull(message = "must be provided") List<String> preferredTags,
             @NotBlank(message = "must be provided") String multiplayerPreference,
             @Positive(message = "must be positive") Integer preferredPlayerCount
     ) {}
 
     public record PreferencesResponse(
-            List<String> preferredGenres,
+            List<String> preferredTags,
             String multiplayerPreference,
             Integer preferredPlayerCount
     ) {}

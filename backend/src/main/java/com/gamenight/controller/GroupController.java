@@ -70,10 +70,10 @@ public class GroupController {
     @GetMapping("/{groupId}/shared-games")
     public List<SharedGameResponse> getSharedGames(
             @PathVariable Long groupId,
-            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) List<String> tags,
             @RequestParam(required = false) Boolean multiplayerSupport,
             @RequestParam(required = false) Integer minPlayers) {
-        return groupService.getSharedGames(groupId, genre, multiplayerSupport, minPlayers);
+        return groupService.getSharedGames(groupId, tags, multiplayerSupport, minPlayers);
     }
 
     @PostMapping("/{groupId}/selections")

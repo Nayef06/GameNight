@@ -19,7 +19,7 @@ public final class GroupDtos {
     public record SharedGameResponse(
             Long id,
             String title,
-            String genre,
+            List<String> tags,
             boolean multiplayerSupport,
             int maxPlayers,
             int preferenceScore

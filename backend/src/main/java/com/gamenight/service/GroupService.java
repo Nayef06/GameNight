@@ -136,7 +136,7 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
-    public List<SharedGameResponse> getSharedGames(Long groupId, String requestedGenre,
+    public List<SharedGameResponse> getSharedGames(Long groupId, List<String> requestedTags,
                                                    Boolean multiplayerSupport, Integer minPlayers) {
         if (minPlayers != null && minPlayers < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -169,14 +169,18 @@ public class GroupService {
             games.put(game.getId(), game);
         }
 
-        String genre = requestedGenre == null ? null : requestedGenre.trim();
+        List<String> tags = requestedTags == null ? List.of() : requestedTags.stream()
+                .map(String::trim)
+                .filter(tag -> !tag.isBlank())
+                .toList();
         return games.values().stream()
                 .filter(game -> ownerCounts.get(game.getId()) == memberIds.size())
-                .filter(game -> genre == null || genre.isBlank() || genre.equalsIgnoreCase(game.getGenre()))
+                .filter(game -> tags.stream().allMatch(tag -> game.getTags().stream()
+                        .anyMatch(value -> value.equalsIgnoreCase(tag))))
                 .filter(game -> multiplayerSupport == null
                         || multiplayerSupport == game.isMultiplayerSupport())
                 .filter(game -> minPlayers == null || game.getMaxPlayers() >= minPlayers)
-                .map(game -> new SharedGameResponse(game.getId(), game.getTitle(), game.getGenre(),
+                .map(game -> new SharedGameResponse(game.getId(), game.getTitle(), game.getTags(),
                         game.isMultiplayerSupport(), game.getMaxPlayers(),
                         calculatePreferenceScore(game, groupMembers)
                                 - (recentlySelectedGameIds.contains(game.getId()) ? 2 : 0)))
@@ -189,10 +193,11 @@ public class GroupService {
     public int calculatePreferenceScore(Game game, List<AppUser> groupMembers) {
         int score = 0;
         for (AppUser member : groupMembers) {
-            if (member.getPreferredGenres() != null
-                    && member.getPreferredGenres().stream()
-                    .anyMatch(genre -> genre.equalsIgnoreCase(game.getGenre()))) {
-                score++;
+            if (member.getPreferredTags() != null) {
+                score += (int) member.getPreferredTags().stream()
+                        .filter(tag -> game.getTags().stream()
+                                .anyMatch(value -> value.equalsIgnoreCase(tag)))
+                        .count();
             }
 
             MultiplayerPreference multiplayerPreference = member.getMultiplayerPreference();

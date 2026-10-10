@@ -29,10 +29,10 @@ class UserPreferencePersistenceTest {
         AppUser savedAlex = userRepository.findById(alexId).orElseThrow();
         AppUser savedSam = userRepository.findById(samId).orElseThrow();
 
-        assertThat(savedAlex.getPreferredGenres()).containsExactlyInAnyOrder("Survival", "Shooter");
+        assertThat(savedAlex.getPreferredTags()).containsExactlyInAnyOrder("Survival", "Shooter");
         assertThat(savedAlex.getMultiplayerPreference()).isEqualTo(MultiplayerPreference.MULTIPLAYER);
         assertThat(savedAlex.getPreferredPlayerCount()).isEqualTo(4);
-        assertThat(savedSam.getPreferredGenres()).isEmpty();
+        assertThat(savedSam.getPreferredTags()).isEmpty();
         assertThat(savedSam.getMultiplayerPreference()).isEqualTo(MultiplayerPreference.NO_PREFERENCE);
         assertThat(savedSam.getPreferredPlayerCount()).isNull();
     }

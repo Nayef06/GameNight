@@ -4,13 +4,9 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api, MultiplayerPreference, Preferences } from "@/lib/api";
 
-const GENRES = [
-  "Action", "Adventure", "RPG", "Strategy", "Survival",
-  "Shooter", "Sports", "Simulation", "Puzzle", "Other",
-];
-
 export default function PreferencesPage() {
-  const [preferredGenres, setPreferredGenres] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [preferredTags, setPreferredTags] = useState<string[]>([]);
   const [multiplayerPreference, setMultiplayerPreference] =
     useState<MultiplayerPreference>("NO_PREFERENCE");
   const [preferredPlayerCount, setPreferredPlayerCount] = useState("");
@@ -21,8 +17,12 @@ export default function PreferencesPage() {
 
   const loadPreferences = useCallback(async () => {
     try {
-      const preferences = await api<Preferences>("/preferences");
-      setPreferredGenres(preferences.preferredGenres);
+      const [preferences, tags] = await Promise.all([
+        api<Preferences>("/preferences"),
+        api<string[]>("/games/tags"),
+      ]);
+      setAvailableTags(tags);
+      setPreferredTags(preferences.preferredTags);
       setMultiplayerPreference(preferences.multiplayerPreference);
       setPreferredPlayerCount(preferences.preferredPlayerCount?.toString() ?? "");
     } catch (problem) {
@@ -34,10 +34,10 @@ export default function PreferencesPage() {
 
   useEffect(() => { void loadPreferences(); }, [loadPreferences]);
 
-  function toggleGenre(genre: string) {
-    setPreferredGenres((current) => current.includes(genre)
-      ? current.filter((value) => value !== genre)
-      : [...current, genre]);
+  function toggleTag(tag: string) {
+    setPreferredTags((current) => current.includes(tag)
+      ? current.filter((value) => value !== tag)
+      : [...current, tag]);
   }
 
   async function savePreferences(event: FormEvent) {
@@ -49,12 +49,12 @@ export default function PreferencesPage() {
       const preferences = await api<Preferences>("/preferences", {
         method: "PUT",
         body: {
-          preferredGenres,
+          preferredTags,
           multiplayerPreference,
           preferredPlayerCount: preferredPlayerCount === "" ? null : Number(preferredPlayerCount),
         },
       });
-      setPreferredGenres(preferences.preferredGenres);
+      setPreferredTags(preferences.preferredTags);
       setMultiplayerPreference(preferences.multiplayerPreference);
       setPreferredPlayerCount(preferences.preferredPlayerCount?.toString() ?? "");
       setMessage("Preferences saved.");
@@ -72,16 +72,16 @@ export default function PreferencesPage() {
         {loading ? <p>Loading preferences...</p> : (
           <form className="preferences-form" onSubmit={savePreferences}>
             <fieldset>
-              <legend>Preferred Genres</legend>
+              <legend>Preferred Tags</legend>
               <div className="checkbox-grid">
-                {GENRES.map((genre) => (
-                  <label className="choice-label" key={genre}>
+                {availableTags.map((tag) => (
+                  <label className="choice-label" key={tag}>
                     <input
                       type="checkbox"
-                      checked={preferredGenres.includes(genre)}
-                      onChange={() => toggleGenre(genre)}
+                      checked={preferredTags.includes(tag)}
+                      onChange={() => toggleTag(tag)}
                     />
-                    {genre}
+                    {tag}
                   </label>
                 ))}
               </div>

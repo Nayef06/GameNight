@@ -16,17 +16,15 @@ import java.util.Set;
 
 @Service
 public class PreferenceService {
-    public static final List<String> SUPPORTED_GENRES = List.of(
-            "Action", "Adventure", "RPG", "Strategy", "Survival",
-            "Shooter", "Sports", "Simulation", "Puzzle", "Other"
-    );
-
     private final CurrentUserService currentUserService;
     private final UserRepository userRepository;
+    private final GameCatalog gameCatalog;
 
-    public PreferenceService(CurrentUserService currentUserService, UserRepository userRepository) {
+    public PreferenceService(CurrentUserService currentUserService, UserRepository userRepository,
+                             GameCatalog gameCatalog) {
         this.currentUserService = currentUserService;
         this.userRepository = userRepository;
+        this.gameCatalog = gameCatalog;
     }
 
     @Transactional(readOnly = true)
@@ -41,10 +39,10 @@ public class PreferenceService {
                     "Preferred player count must be positive.");
         }
 
-        Set<String> genres = new LinkedHashSet<>(request.preferredGenres());
-        if (genres.stream().anyMatch(genre -> !SUPPORTED_GENRES.contains(genre))) {
+        Set<String> tags = new LinkedHashSet<>(request.preferredTags());
+        if (tags.contains(null) || tags.stream().anyMatch(tag -> !gameCatalog.getTags().contains(tag))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Preferred genres must use supported genre values.");
+                    "Preferred tags must use supported tag values.");
         }
 
         MultiplayerPreference multiplayerPreference;
@@ -56,16 +54,16 @@ public class PreferenceService {
         }
 
         AppUser user = currentUserService.get();
-        user.updatePreferences(genres, multiplayerPreference, request.preferredPlayerCount());
+        user.updatePreferences(tags, multiplayerPreference, request.preferredPlayerCount());
         userRepository.save(user);
         return toResponse(user);
     }
 
     private PreferencesResponse toResponse(AppUser user) {
-        List<String> genres = SUPPORTED_GENRES.stream()
-                .filter(user.getPreferredGenres()::contains)
+        List<String> tags = user.getPreferredTags().stream()
+                .sorted()
                 .toList();
-        return new PreferencesResponse(genres, user.getMultiplayerPreference().name(),
+        return new PreferencesResponse(tags, user.getMultiplayerPreference().name(),
                 user.getPreferredPlayerCount());
     }
 }

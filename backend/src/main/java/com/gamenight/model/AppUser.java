@@ -36,7 +36,7 @@ public class AppUser {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_preferred_genres", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "genre", nullable = false, length = 50)
-    private Set<String> preferredGenres = new LinkedHashSet<>();
+    private Set<String> preferredTags = new LinkedHashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "multiplayer_preference", nullable = false,
@@ -57,14 +57,14 @@ public class AppUser {
     public String getUsername() { return username; }
     public String getPasswordHash() { return passwordHash; }
     public Instant getCreatedAt() { return createdAt; }
-    public Set<String> getPreferredGenres() { return Set.copyOf(preferredGenres); }
+    public Set<String> getPreferredTags() { return Set.copyOf(preferredTags); }
     public MultiplayerPreference getMultiplayerPreference() { return multiplayerPreference; }
     public Integer getPreferredPlayerCount() { return preferredPlayerCount; }
 
-    public void updatePreferences(Set<String> genres, MultiplayerPreference preference,
+    public void updatePreferences(Set<String> tags, MultiplayerPreference preference,
                                   Integer playerCount) {
-        preferredGenres.clear();
-        preferredGenres.addAll(genres);
+        preferredTags.clear();
+        preferredTags.addAll(tags);
         multiplayerPreference = preference;
         preferredPlayerCount = playerCount;
     }

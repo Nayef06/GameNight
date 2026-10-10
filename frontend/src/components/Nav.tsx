@@ -9,7 +9,7 @@ export function Nav() {
   return (
     <header>
       <nav>
-        <Link className="brand" href="/">GameNight</Link>
+        <Link className="brand" href={ready && username ? "/library" : "/"}>GameNight</Link>
         {ready && username ? (
           <div className="nav-links">
             <span className="separator">|</span>

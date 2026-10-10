@@ -6,10 +6,8 @@ import { api, Game } from "@/lib/api";
 
 export default function LibraryPage() {
   const [games, setGames] = useState<Game[]>([]);
-  const [title, setTitle] = useState("");
-  const [genre, setGenre] = useState("Action");
-  const [multiplayerSupport, setMultiplayerSupport] = useState("true");
-  const [maxPlayers, setMaxPlayers] = useState("2");
+  const [catalog, setCatalog] = useState<Game[]>([]);
+  const [gameId, setGameId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -21,7 +19,21 @@ export default function LibraryPage() {
     }
   }, []);
 
-  useEffect(() => { void loadGames(); }, [loadGames]);
+  useEffect(() => {
+    async function load() {
+      try {
+        const [library, availableGames] = await Promise.all([
+          api<Game[]>("/library"),
+          api<Game[]>("/games"),
+        ]);
+        setGames(library);
+        setCatalog(availableGames);
+      } catch (problem) {
+        setError(problem instanceof Error ? problem.message : "Could not load games");
+      }
+    }
+    void load();
+  }, []);
 
   async function addGame(event: FormEvent) {
     event.preventDefault();
@@ -30,23 +42,18 @@ export default function LibraryPage() {
     try {
       await api<Game>("/library", {
         method: "POST",
-        body: {
-          title,
-          genre,
-          multiplayerSupport: multiplayerSupport === "true",
-          maxPlayers: Number(maxPlayers),
-        },
+        body: { gameId: Number(gameId) },
       });
-      setTitle("");
-      setGenre("Action");
-      setMultiplayerSupport("true");
-      setMaxPlayers("2");
+      setGameId("");
       await loadGames();
       setMessage("Game added.");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not add game");
     }
   }
+
+  const availableGames = catalog.filter((game) => !games.some((owned) => owned.id === game.id));
+  const selectedGame = catalog.find((game) => game.id === Number(gameId));
 
   async function removeGame(gameId: number) {
     setError("");
@@ -66,28 +73,20 @@ export default function LibraryPage() {
         <h1>My Library</h1>
         <form className="game-form" onSubmit={addGame}>
           <label htmlFor="game-title">
-            Game Title
-            <input id="game-title" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </label>
-          <label htmlFor="game-genre">
-            Genre
-            <select id="game-genre" value={genre} onChange={(e) => setGenre(e.target.value)} required>
-              {['Action', 'Adventure', 'RPG', 'Strategy', 'Survival', 'Shooter', 'Sports', 'Simulation', 'Puzzle', 'Other']
-                .map((option) => <option key={option}>{option}</option>)}
+            Select a Game
+            <select id="game-title" value={gameId} onChange={(e) => setGameId(e.target.value)} required>
+              <option value="">Choose a game</option>
+              {availableGames.map((game) => (
+                <option key={game.id} value={game.id}>{game.title}</option>
+              ))}
             </select>
           </label>
-          <label htmlFor="game-multiplayer">
-            Multiplayer Support
-            <select id="game-multiplayer" value={multiplayerSupport} onChange={(e) => setMultiplayerSupport(e.target.value)} required>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <label htmlFor="game-max-players">
-            Maximum Players
-            <input id="game-max-players" type="number" min="1" step="1" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} required />
-          </label>
-          <button>Add Game</button>
+          {selectedGame && (
+            <p className="game-details">
+              Tags: {selectedGame.tags.join(", ")} | {selectedGame.multiplayerSupport ? "Multiplayer" : "Single Player"} | Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}
+            </p>
+          )}
+          <button disabled={!gameId}>Add to My Library</button>
         </form>
         {error && <p className="error">{error}</p>}
         {message && <p className="success">{message}</p>}
@@ -99,7 +98,7 @@ export default function LibraryPage() {
                 <div>
                   <strong>{game.title}</strong>
                   <div className="game-details">
-                    {game.genre} | {game.multiplayerSupport ? "Multiplayer" : "Single Player"} | Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}
+                    Tags: {game.tags.join(", ")} | {game.multiplayerSupport ? "Multiplayer" : "Single Player"} | Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}
                   </div>
                 </div>
                 <button className="small danger" onClick={() => removeGame(game.id)}>Remove</button>

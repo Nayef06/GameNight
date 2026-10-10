@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class LibraryService {
@@ -36,22 +35,12 @@ public class LibraryService {
     }
 
     @Transactional
-    public GameResponse addGame(String requestedTitle, String requestedGenre,
-                                boolean multiplayerSupport, int maxPlayers) {
-        if (maxPlayers < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum players must be at least 1.");
-        }
-        String genre = requestedGenre.trim().replaceAll("\\s+", " ");
-        if (genre.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Genre cannot be blank.");
-        }
-
+    public GameResponse addGame(Long gameId) {
         AppUser user = currentUserService.get();
-        String title = requestedTitle.trim().replaceAll("\\s+", " ");
-        String normalizedTitle = title.toLowerCase(Locale.ROOT);
-        Game game = gameRepository.findByNormalizedTitle(normalizedTitle)
-                .orElseGet(() -> gameRepository.save(
-                        new Game(title, normalizedTitle, genre, multiplayerSupport, maxPlayers)));
+        Game game = gameRepository.findById(gameId)
+                .filter(candidate -> GameCatalog.contains(candidate.getNormalizedTitle()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Choose a game from the catalog."));
 
         if (userGameRepository.existsByUserIdAndGameId(user.getId(), game.getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already in your library.");
@@ -69,7 +58,7 @@ public class LibraryService {
     }
 
     private GameResponse toResponse(Game game) {
-        return new GameResponse(game.getId(), game.getTitle(), game.getGenre(),
+        return new GameResponse(game.getId(), game.getTitle(), game.getTags(),
                 game.isMultiplayerSupport(), game.getMaxPlayers());
     }
 }

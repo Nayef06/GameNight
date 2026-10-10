@@ -1,6 +1,6 @@
 # GameNight
 
-GameNight is a deliberately small semester-project prototype. Users manually list the games they own with basic metadata, create or join groups, see and filter the games owned by every member of a group, save basic game preferences, and mark a shared game as recently played.
+GameNight is a deliberately small semester-project prototype. Users select the games they own from a built-in catalog of real titles, create or join groups, see and filter the games owned by every member of a group, save tag preferences, and mark a shared game as recently played. Catalog games can have multiple tags.
 
 This repository implements only that flow. It has no external game APIs, voting, sessions, chat, or other social features.
 
@@ -71,12 +71,12 @@ Use a new Base64-encoded secret of at least 32 bytes outside local development.
 Use two browser profiles (or a normal and private window) so both users can stay logged in.
 
 1. Register `Nayef` with any password of at least six characters. Usernames are stored in lowercase, so the UI will show `nayef`.
-2. Add `Terraria`, `Minecraft`, and `Lethal Company` to Nayef's library, including a genre, multiplayer support, and maximum player count for each game.
+2. Select `Terraria`, `Minecraft`, and `Lethal Company` from the catalog for Nayef's library. Their tags, multiplayer support, and maximum player count are provided by the catalog.
 3. Create a group named `Friday Night Group` and copy its six-character join code.
 4. In the other browser profile, register `Alex` and add `Terraria`, `Lethal Company`, and `Valorant`.
 5. Open **My Groups**, join with the copied code, and open **Friday Night Group**.
 6. Confirm both `alex` and `nayef` are listed under **Members**.
-7. Confirm **Shared Games** lists only `Lethal Company` and `Terraria`, then try the genre, multiplayer, and minimum-player filters.
+7. Confirm **Shared Games** lists only `Lethal Company` and `Terraria`, then select multiple tags to match all of them and try the multiplayer and minimum-player filters.
 8. Clear the filters and confirm both shared games return.
 9. Choose one of the shared games and confirm it appears under **Recently Chosen** and remains in the shared-game list with a small ranking penalty.
 10. Refresh the page. The members, shared games, and recent selection should still be present because they are stored in PostgreSQL.
@@ -89,24 +89,26 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 | --- | --- | --- |
 | POST | `/api/auth/register` | `{ "username": "alex", "password": "secret1" }` |
 | POST | `/api/auth/login` | `{ "username": "alex", "password": "secret1" }` |
+| GET | `/api/games` | Available catalog games with tags and player metadata |
+| GET | `/api/games/tags` | Available tags |
 | GET | `/api/library` | — |
-| POST | `/api/library` | `{ "title": "Terraria", "genre": "Survival", "multiplayerSupport": true, "maxPlayers": 8 }` |
+| POST | `/api/library` | `{ "gameId": 12 }` where the ID comes from `/api/games` |
 | DELETE | `/api/library/{gameId}` | — |
 | GET | `/api/preferences` | — |
-| PUT | `/api/preferences` | `{ "preferredGenres": ["Survival", "Shooter"], "multiplayerPreference": "MULTIPLAYER", "preferredPlayerCount": 4 }` |
+| PUT | `/api/preferences` | `{ "preferredTags": ["Survival", "Co-op"], "multiplayerPreference": "MULTIPLAYER", "preferredPlayerCount": 4 }` |
 | GET | `/api/groups` | — |
 | POST | `/api/groups` | `{ "name": "Friday Night Group" }` |
 | POST | `/api/groups/join` | `{ "joinCode": "AB12CD" }` |
 | GET | `/api/groups/{groupId}` | — |
 | DELETE | `/api/groups/{groupId}/members/{userId}` | — |
 | POST | `/api/groups/{groupId}/leave` | — |
-| GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: `genre`, `multiplayerSupport`, `minPlayers` |
+| GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: repeated `tags` (all must match), `multiplayerSupport`, `minPlayers` |
 | POST | `/api/groups/{groupId}/selections` | `{ "gameId": 12 }` |
 | GET | `/api/groups/{groupId}/selections/recent` | — |
 
-Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. The three most recent selections receive a two-point ranking penalty without being removed. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
+Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. Each matching preferred tag adds one point per member, as do a matching multiplayer preference and support for their preferred player count. The three most recent selections receive a two-point ranking penalty without being removed. Shared games appear in score order, with tied top scores highlighted in green. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
 
-On startup, JPA adds the metadata and preference fields when upgrading an existing database. Existing games receive the safe defaults `Other`, `false`, and `1`; users receive no preferred genres, `NO_PREFERENCE`, and no preferred player count.
+On startup, JPA adds tag storage and the catalog is seeded. Existing games remain in users' libraries; catalog matches get catalog metadata, while older custom games remain visible with their previous genre shown as one tag. New library additions must come from the catalog. Existing user preferences remain stored and are exposed as preferred tags.
 
 ## Checks
 

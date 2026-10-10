@@ -126,7 +126,7 @@ class GroupServiceTest {
                 .thenAnswer(invocation -> !removed.get());
         when(membershipRepository.deleteByUserIdAndGroupId(2L, 10L)).thenAnswer(invocation -> {
             removed.set(true);
-            return 1L;
+            return 1;
         });
 
         groupService.removeMember(10L, 2L);
@@ -175,7 +175,7 @@ class GroupServiceTest {
                 .thenAnswer(invocation -> !removed.get());
         when(membershipRepository.deleteByUserIdAndGroupId(2L, 10L)).thenAnswer(invocation -> {
             removed.set(true);
-            return 1L;
+            return 1;
         });
 
         GroupMembership creatorMembership = membership(creator);
@@ -229,7 +229,7 @@ class GroupServiceTest {
         List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0));
+                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0));
     }
 
     @Test
@@ -250,19 +250,33 @@ class GroupServiceTest {
         List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new SharedGameResponse(101L, "Minecraft", "Survival", true, 8, 0),
-                new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0)
+                new SharedGameResponse(101L, "Minecraft", List.of("Survival"), true, 8, 0),
+                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0)
         );
     }
 
     @Test
-    void sharedGamesCanBeFilteredByGenre() {
+    void sharedGamesCanBeFilteredByTag() {
         Game terraria = game(100L, "Terraria", "Survival", true, 8);
         Game portal = game(101L, "Portal", "Puzzle", false, 1);
         prepareOneMemberGames(10L, terraria, portal);
 
-        assertThat(groupService.getSharedGames(10L, "survival", null, null))
-                .containsExactly(new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0));
+        assertThat(groupService.getSharedGames(10L, List.of("survival"), null, null))
+                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0));
+    }
+
+    @Test
+    void multipleTagsMustAllMatchAndStillRankSharedGames() {
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        lenient().when(terraria.getTags()).thenReturn(List.of("Sandbox", "Survival"));
+        Game minecraft = game(101L, "Minecraft", "Survival", true, 8);
+        lenient().when(minecraft.getTags()).thenReturn(List.of("Sandbox", "Building"));
+        AppUser member = prepareOneMemberGames(10L, terraria, minecraft);
+        prefer(member, Set.of("Sandbox", "Survival"), MultiplayerPreference.NO_PREFERENCE, null);
+
+        assertThat(groupService.getSharedGames(10L, List.of("sandbox", "Survival"), null, null))
+                .containsExactly(new SharedGameResponse(
+                        100L, "Terraria", List.of("Sandbox", "Survival"), true, 8, 2));
     }
 
     @Test
@@ -272,7 +286,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, false, null))
-                .containsExactly(new SharedGameResponse(101L, "Portal", "Puzzle", false, 1, 0));
+                .containsExactly(new SharedGameResponse(101L, "Portal", List.of("Puzzle"), false, 1, 0));
     }
 
     @Test
@@ -282,15 +296,38 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, null, 4))
-                .containsExactly(new SharedGameResponse(100L, "Terraria", "Survival", true, 8, 0));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0));
     }
 
     @Test
-    void genreMatchesIncreasePreferenceScore() {
+    void tagMatchesIncreasePreferenceScore() {
         AppUser member = preferenceUser(Set.of("Survival"), MultiplayerPreference.NO_PREFERENCE, null);
         Game terraria = game(100L, "Terraria", "Survival", true, 8);
 
         assertThat(groupService.calculatePreferenceScore(terraria, List.of(member))).isEqualTo(1);
+    }
+
+    @Test
+    void everyMatchingTagCountsAndGamesAreRankedByTheFullScore() {
+        Game overcooked = game(100L, "Overcooked! 2", "Co-op", true, 4);
+        lenient().when(overcooked.getTags()).thenReturn(List.of("Co-op", "Party", "Simulation"));
+        Game phasmophobia = game(101L, "Phasmophobia", "Co-op", true, 4);
+        lenient().when(phasmophobia.getTags()).thenReturn(List.of("Co-op", "Horror"));
+        Game terraria = game(102L, "Terraria", "Survival", true, 8);
+        lenient().when(terraria.getTags()).thenReturn(List.of("Adventure", "Sandbox", "Survival"));
+        Game amongUs = game(103L, "Among Us", "Party", true, 15);
+        lenient().when(amongUs.getTags()).thenReturn(List.of("Party", "Social Deduction"));
+        AppUser member = prepareOneMemberGames(10L, overcooked, phasmophobia, terraria, amongUs);
+        prefer(member, Set.of("Building", "Co-op", "Sandbox", "Survival"),
+                MultiplayerPreference.MULTIPLAYER, null);
+
+        assertThat(groupService.getSharedGames(10L))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Terraria", 3),
+                        org.assertj.core.groups.Tuple.tuple("Overcooked! 2", 2),
+                        org.assertj.core.groups.Tuple.tuple("Phasmophobia", 2),
+                        org.assertj.core.groups.Tuple.tuple("Among Us", 1));
     }
 
     @Test
@@ -340,7 +377,7 @@ class GroupServiceTest {
 
         assertThat(groupService.getSharedGames(10L))
                 .containsExactly(new SharedGameResponse(
-                        100L, "Terraria", "Survival", true, 8, 0));
+                        100L, "Terraria", List.of("Survival"), true, 8, 0));
     }
 
     @Test
@@ -351,7 +388,7 @@ class GroupServiceTest {
         AppUser member = prepareOneMemberGames(10L, zulu, puzzle, alpha);
         prefer(member, Set.of("Survival"), MultiplayerPreference.MULTIPLAYER, 4);
 
-        assertThat(groupService.getSharedGames(10L, "Survival", null, null))
+        assertThat(groupService.getSharedGames(10L, List.of("Survival"), null, null))
                 .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("Alpha", 3),
@@ -450,7 +487,7 @@ class GroupServiceTest {
 
     private void prefer(AppUser user, Set<String> genres, MultiplayerPreference multiplayerPreference,
                         Integer playerCount) {
-        when(user.getPreferredGenres()).thenReturn(genres);
+        when(user.getPreferredTags()).thenReturn(genres);
         when(user.getMultiplayerPreference()).thenReturn(multiplayerPreference);
         when(user.getPreferredPlayerCount()).thenReturn(playerCount);
     }
@@ -458,7 +495,7 @@ class GroupServiceTest {
     private AppUser user(Long id) {
         AppUser user = mock(AppUser.class);
         when(user.getId()).thenReturn(id);
-        lenient().when(user.getPreferredGenres()).thenReturn(Set.of());
+        lenient().when(user.getPreferredTags()).thenReturn(Set.of());
         lenient().when(user.getMultiplayerPreference()).thenReturn(MultiplayerPreference.NO_PREFERENCE);
         lenient().when(user.getPreferredPlayerCount()).thenReturn(null);
         return user;
@@ -485,7 +522,7 @@ class GroupServiceTest {
     private Game game(Long id, String title, String genre, boolean multiplayerSupport, int maxPlayers) {
         Game game = game(id);
         lenient().when(game.getTitle()).thenReturn(title);
-        lenient().when(game.getGenre()).thenReturn(genre);
+        lenient().when(game.getTags()).thenReturn(List.of(genre));
         lenient().when(game.isMultiplayerSupport()).thenReturn(multiplayerSupport);
         lenient().when(game.getMaxPlayers()).thenReturn(maxPlayers);
         return game;
