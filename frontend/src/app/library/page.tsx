@@ -3,6 +3,11 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api, Game } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { GameThumbnail } from "@/components/GameThumbnail";
 
 export default function LibraryPage() {
   const [games, setGames] = useState<Game[]>([]);
@@ -69,44 +74,48 @@ export default function LibraryPage() {
 
   return (
     <RequireAuth>
-      <section className="card">
-        <h1>My Library</h1>
-        <form className="game-form" onSubmit={addGame}>
-          <label htmlFor="game-title">
-            Select a Game
-            <select id="game-title" value={gameId} onChange={(e) => setGameId(e.target.value)} required>
-              <option value="">Choose a game</option>
-              {availableGames.map((game) => (
-                <option key={game.id} value={game.id}>{game.title}</option>
-              ))}
-            </select>
-          </label>
-          {selectedGame && (
-            <p className="game-details">
-              Tags: {selectedGame.tags.join(", ")} | {selectedGame.multiplayerSupport ? "Multiplayer" : "Single Player"} | Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}
-            </p>
-          )}
-          <button disabled={!gameId}>Add to My Library</button>
-        </form>
-        {error && <p className="error">{error}</p>}
-        {message && <p className="success">{message}</p>}
-        <h2>My Games</h2>
-        {games.length === 0 ? <p>You have not added any games yet.</p> : (
-          <ul className="item-list">
-            {games.map((game) => (
-              <li key={game.id}>
-                <div>
-                  <strong>{game.title}</strong>
-                  <div className="game-details">
-                    Tags: {game.tags.join(", ")} | {game.multiplayerSupport ? "Multiplayer" : "Single Player"} | Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}
-                  </div>
-                </div>
-                <button className="small danger" onClick={() => removeGame(game.id)}>Remove</button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold">My Library</h1>
+        <Card>
+          <CardHeader><CardTitle>Add a game</CardTitle><CardDescription>Select a game from the catalog.</CardDescription></CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={addGame}>
+              <div className="space-y-2">
+                <Label htmlFor="game-title">Game</Label>
+                <NativeSelect id="game-title" className="w-full" value={gameId} onChange={(e) => setGameId(e.target.value)} required>
+                  <NativeSelectOption value="">Choose a game</NativeSelectOption>
+                  {availableGames.map((game) => <NativeSelectOption key={game.id} value={game.id}>{game.title}</NativeSelectOption>)}
+                </NativeSelect>
+              </div>
+              {selectedGame && <div className="flex items-center gap-3"><GameThumbnail title={selectedGame.title} /><p className="text-sm text-muted-foreground">Tags: {selectedGame.tags.join(", ")} · {selectedGame.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}</p></div>}
+              <Button disabled={!gameId}>Add to library</Button>
+            </form>
+          </CardContent>
+        </Card>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
+        <Card>
+          <CardHeader><CardTitle>My games</CardTitle></CardHeader>
+          <CardContent>
+            {games.length === 0 ? <p className="text-sm text-muted-foreground">You have not added any games yet.</p> : (
+              <ul className="divide-y divide-border">
+                {games.map((game) => (
+                  <li className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={game.id}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <GameThumbnail title={game.title} />
+                      <div className="min-w-0 space-y-1">
+                        <p className="font-medium">{game.title}</p>
+                        <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · {game.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}</p>
+                      </div>
+                    </div>
+                    <Button type="button" size="sm" variant="destructive" onClick={() => removeGame(game.id)}>Remove</Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </RequireAuth>
   );
 }

@@ -5,6 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api, GameSelection, GroupDetails, SharedGame } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { GameThumbnail } from "@/components/GameThumbnail";
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +100,6 @@ export default function GroupPage() {
   }
 
   async function removeMember(userId: number, username: string) {
-    if (!window.confirm(`Remove ${username} from this group?`)) return;
     setError("");
     setMessage("");
     try {
@@ -108,7 +116,6 @@ export default function GroupPage() {
   }
 
   async function leaveGroup() {
-    if (!window.confirm("Leave this group?")) return;
     setError("");
     setMessage("");
     try {
@@ -142,104 +149,109 @@ export default function GroupPage() {
 
   return (
     <RequireAuth>
-      <section className="card">
-        <Link href="/groups">Back to groups</Link>
-        {error && <p className="error">{error}</p>}
-        {message && <p className="success">{message}</p>}
-        {!group ? !error && <p>Loading group...</p> : (
+      <div className="space-y-6">
+        <Button asChild variant="ghost" size="sm"><Link href="/groups">← Back to groups</Link></Button>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
+        {!group ? !error && <p className="text-sm text-muted-foreground">Loading group...</p> : (
           <>
-            <h1>{group.name}</h1>
-            <p>Join code: <strong className="join-code">{group.joinCode}</strong></p>
-            <h2>Members</h2>
-            <ul className="simple-list">
-              {group.members.map((member) => (
-                <li className="member-row" key={member.id}>
-                  <span>{member.username}{member.creator ? " (Creator)" : ""}</span>
-                  {group.currentUserIsCreator && !member.creator && (
-                    <button className="small danger" onClick={() => removeMember(member.id, member.username)}>
-                      Remove
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {group.currentUserIsCreator ? (
-              <p className="muted">The group creator cannot leave the group.</p>
-            ) : (
-              <button className="danger section-action" onClick={leaveGroup}>Leave Group</button>
-            )}
-            <hr />
-            <h2>Shared Games</h2>
-            <p className="muted">Games owned by every member of this group.</p>
-            <p className="muted">Each matching preferred tag adds 1 point per member. Matching multiplayer and player-count preferences add 1 point each. Recently chosen games lose 2 points. Highest scores appear first.</p>
-            <form className="filter-form" onSubmit={applyFilters}>
-              <fieldset className="tag-filter">
-                <legend>Tags</legend>
-                <p className="muted">Games must have every selected tag.</p>
-                <div className="tag-options">
-                  {availableTags.map((tag) => (
-                    <label className="tag-option" key={tag}>
-                      <input type="checkbox" checked={selectedTags.includes(tag)}
-                        onChange={() => toggleTag(tag)} />
-                      {tag}
-                    </label>
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold">{group.name}</h1>
+              <p className="text-sm text-muted-foreground">Join code: <strong className="font-mono text-foreground">{group.joinCode}</strong></p>
+            </div>
+            <Card>
+              <CardHeader><CardTitle>Members</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="divide-y divide-border">
+                  {group.members.map((member) => (
+                    <li className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0" key={member.id}>
+                      <span>{member.username}{member.creator && <Badge variant="outline" className="ml-2">Creator</Badge>}</span>
+                      {group.currentUserIsCreator && !member.creator && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild><Button size="sm" variant="destructive">Remove</Button></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Remove member?</AlertDialogTitle><AlertDialogDescription>Remove {member.username} from this group?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => removeMember(member.id, member.username)}>Remove</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </li>
                   ))}
+                </ul>
+                {group.currentUserIsCreator ? <p className="text-sm text-muted-foreground">The group creator cannot leave the group.</p> : (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild><Button variant="destructive">Leave group</Button></AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader><AlertDialogTitle>Leave group?</AlertDialogTitle><AlertDialogDescription>You will no longer have access to this group.</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={leaveGroup}>Leave group</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Shared games</CardTitle>
+                <CardDescription>Games owned by every member. Each matching preferred tag adds 1 point per member. Matching multiplayer and player count preferences add 1 point each. Recently chosen games lose 2 points. Highest scores appear first.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <form className="space-y-4" onSubmit={applyFilters}>
+                  <fieldset className="space-y-3">
+                    <legend className="mb-1 text-sm font-medium">Tags</legend>
+                    <p className="text-sm text-muted-foreground">Games must have every selected tag.</p>
+                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                      {availableTags.map((tag) => (
+                        <div className="flex items-center gap-2" key={tag}>
+                          <Checkbox id={`filter-tag-${tag}`} checked={selectedTags.includes(tag)} onCheckedChange={() => toggleTag(tag)} />
+                          <Label htmlFor={`filter-tag-${tag}`} className="font-normal">{tag}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="filter-multiplayer">Multiplayer</Label>
+                      <NativeSelect id="filter-multiplayer" className="w-full" value={multiplayerSupport} onChange={(e) => setMultiplayerSupport(e.target.value)}>
+                        <NativeSelectOption value="">Any</NativeSelectOption>
+                        <NativeSelectOption value="true">Multiplayer</NativeSelectOption>
+                        <NativeSelectOption value="false">Single player</NativeSelectOption>
+                      </NativeSelect>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="filter-min-players">Minimum player capacity</Label>
+                      <Input id="filter-min-players" type="number" min="1" step="1" value={minPlayers} onChange={(e) => setMinPlayers(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2"><Button type="submit">Apply filters</Button><Button type="button" variant="outline" onClick={clearFilters}>Clear filters</Button></div>
+                </form>
+                <div className="border-t pt-4">
+                  {sharedGames.length === 0 ? <p className="text-sm text-muted-foreground">{appliedFilterQuery ? "No shared games match these filters." : "No games are currently owned by everyone in this group."}</p> : (
+                    <ul className="space-y-2">{sharedGames.map((game) => (
+                      <li className={`flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3 ${game.preferenceScore === sharedGames[0].preferenceScore ? "border-green-800 bg-green-950/30" : "border-border"}`} key={game.id}>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <GameThumbnail title={game.title} />
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2"><strong className="font-medium">{game.title}</strong>{game.preferenceScore === sharedGames[0].preferenceScore && <Badge className="border-green-800 bg-green-950 text-green-300" variant="outline">Top score</Badge>}</div>
+                            <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} · Max players: {game.maxPlayers}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm">Score: <strong>{game.preferenceScore}</strong></span>
+                          <Button type="button" size="sm" disabled={choosingGameId !== null} onClick={() => chooseGame(game)}>{choosingGameId === game.id ? "Choosing..." : "Choose game"}</Button>
+                        </div>
+                      </li>
+                    ))}</ul>
+                  )}
                 </div>
-              </fieldset>
-              <label htmlFor="filter-multiplayer">
-                Multiplayer
-                <select id="filter-multiplayer" value={multiplayerSupport} onChange={(e) => setMultiplayerSupport(e.target.value)}>
-                  <option value="">Any</option>
-                  <option value="true">Multiplayer</option>
-                  <option value="false">Single Player</option>
-                </select>
-              </label>
-              <label htmlFor="filter-min-players">
-                Minimum Player Capacity
-                <input id="filter-min-players" type="number" min="1" step="1" value={minPlayers} onChange={(e) => setMinPlayers(e.target.value)} />
-              </label>
-              <div className="filter-actions">
-                <button type="submit">Apply Filters</button>
-                <button type="button" className="secondary" onClick={clearFilters}>Clear Filters</button>
-              </div>
-            </form>
-            {sharedGames.length === 0 ? (
-              <p>{appliedFilterQuery ? "No shared games match these filters." : "No games are currently owned by everyone in this group."}</p>
-            ) : (
-              <ul className="simple-list">{sharedGames.map((game) => (
-                <li className={`shared-game-row${game.preferenceScore === sharedGames[0].preferenceScore ? " top-scoring-game" : ""}`} key={game.id}>
-                  <div>
-                    <div className="shared-game-title">
-                      <strong>{game.title}</strong>
-                      {game.preferenceScore === sharedGames[0].preferenceScore && <span className="top-score-label">Top score</span>}
-                    </div>
-                    <div className="game-details">
-                      Tags: {game.tags.join(", ")} | Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} | Max Players: {game.maxPlayers}
-                    </div>
-                  </div>
-                  <div className="shared-game-actions">
-                    <span className="preference-score">Score: <strong>{game.preferenceScore}</strong></span>
-                    <button type="button" className="small" disabled={choosingGameId !== null}
-                      onClick={() => chooseGame(game)}>
-                      {choosingGameId === game.id ? "Choosing..." : "Choose Game"}
-                    </button>
-                  </div>
-                </li>
-              ))}</ul>
-            )}
-            <h2>Recently Chosen</h2>
-            {recentSelections.length === 0 ? (
-              <p className="muted">No games have been chosen yet.</p>
-            ) : (
-              <ul className="simple-list recent-selections">
-                {recentSelections.map((selection) => (
-                  <li key={selection.id}>{selection.gameTitle}</li>
-                ))}
-              </ul>
-            )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Recently chosen</CardTitle></CardHeader>
+              <CardContent>{recentSelections.length === 0 ? <p className="text-sm text-muted-foreground">No games have been chosen yet.</p> : <ul className="divide-y divide-border">{recentSelections.map((selection) => <li className="flex items-center gap-3 py-2 first:pt-0 last:pb-0" key={selection.id}><GameThumbnail title={selection.gameTitle} /><span>{selection.gameTitle}</span></li>)}</ul>}</CardContent>
+            </Card>
           </>
         )}
-      </section>
+      </div>
     </RequireAuth>
   );
 }

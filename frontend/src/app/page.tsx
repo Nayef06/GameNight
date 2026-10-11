@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
   const { username, ready } = useAuth();
@@ -13,16 +15,18 @@ export default function Home() {
     if (ready && username) router.replace("/library");
   }, [ready, username, router]);
 
-  if (!ready || username) return <p>Loading...</p>;
+  if (!ready || username) return <p className="text-sm text-muted-foreground">Loading...</p>;
 
   return (
-    <section className="card hero">
-      <h1>GameNight</h1>
-      <p>Find the games everyone in your group owns.</p>
-      <div className="actions">
-        <Link className="button" href="/login">Login</Link>
-        <Link className="button secondary" href="/register">Create Account</Link>
-      </div>
-    </section>
+    <Card className="mx-auto max-w-md">
+      <CardHeader>
+        <CardTitle className="text-xl">GameNight</CardTitle>
+        <CardDescription>Find the games everyone in your group owns.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex gap-2">
+        <Button asChild><Link href="/login">Login</Link></Button>
+        <Button asChild variant="outline"><Link href="/register">Create account</Link></Button>
+      </CardContent>
+    </Card>
   );
 }

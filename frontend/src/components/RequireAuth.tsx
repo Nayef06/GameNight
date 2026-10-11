@@ -12,7 +12,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     if (ready && !username) router.replace("/login");
   }, [ready, username, router]);
 
-  if (!ready || !username) return <p>Loading...</p>;
+  if (!ready || !username) return <p className="text-sm text-muted-foreground">Loading...</p>;
   return children;
 }
 
