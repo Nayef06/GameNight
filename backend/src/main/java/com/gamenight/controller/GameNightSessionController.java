@@ -2,7 +2,10 @@ package com.gamenight.controller;
 
 import com.gamenight.dto.SessionDtos.CreateSessionRequest;
 import com.gamenight.dto.SessionDtos.SessionResponse;
+import com.gamenight.dto.SessionDtos.VoteRequest;
+import com.gamenight.dto.SessionDtos.VotingResultsResponse;
 import com.gamenight.service.GameNightSessionService;
+import com.gamenight.service.SessionVotingService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/groups/{groupId}/sessions")
 public class GameNightSessionController {
     private final GameNightSessionService sessionService;
+    private final SessionVotingService votingService;
 
-    public GameNightSessionController(GameNightSessionService sessionService) {
+    public GameNightSessionController(GameNightSessionService sessionService,
+                                      SessionVotingService votingService) {
         this.sessionService = sessionService;
+        this.votingService = votingService;
     }
 
     @PostMapping
@@ -40,5 +46,23 @@ public class GameNightSessionController {
     @GetMapping("/{sessionId}")
     public SessionResponse get(@PathVariable Long groupId, @PathVariable Long sessionId) {
         return sessionService.get(groupId, sessionId);
+    }
+
+    @PostMapping("/{sessionId}/vote")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void vote(@PathVariable Long groupId, @PathVariable Long sessionId,
+                     @Valid @RequestBody VoteRequest request) {
+        votingService.vote(groupId, sessionId, request.gameId());
+    }
+
+    @GetMapping("/{sessionId}/results")
+    public VotingResultsResponse results(@PathVariable Long groupId, @PathVariable Long sessionId) {
+        return votingService.results(groupId, sessionId);
+    }
+
+    @PostMapping("/{sessionId}/close")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void close(@PathVariable Long groupId, @PathVariable Long sessionId) {
+        votingService.close(groupId, sessionId);
     }
 }

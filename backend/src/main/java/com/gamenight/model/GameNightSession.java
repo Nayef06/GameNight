@@ -62,4 +62,6 @@ public class GameNightSession {
     public Instant getCreatedAt() { return createdAt; }
     public GameNightSessionStatus getStatus() { return status; }
     public Set<Game> getCandidates() { return candidates; }
+
+    public void close() { status = GameNightSessionStatus.CLOSED; }
 }

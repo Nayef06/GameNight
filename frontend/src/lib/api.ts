@@ -48,6 +48,11 @@ export type GameNightSession = {
   status: "OPEN" | "CLOSED";
   candidates: { id: number; title: string }[];
 };
+export type SessionVotingResults = {
+  status: "OPEN" | "CLOSED";
+  currentUserVoteGameId: number | null;
+  results: { gameId: number; title: string; votes: number }[];
+};
 export type Group = { id: number; name: string; joinCode: string; memberCount: number };
 export type GroupMember = { id: number; username: string; creator: boolean };
 export type GroupDetails = {

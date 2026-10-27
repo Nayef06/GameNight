@@ -13,4 +13,8 @@ public final class SessionDtos {
     public record CandidateGame(Long id, String title) {}
     public record SessionResponse(Long id, Long groupId, String createdBy,
                                   Instant createdAt, String status, List<CandidateGame> candidates) {}
+    public record VoteRequest(@NotNull Long gameId) {}
+    public record VoteCount(Long gameId, String title, long votes) {}
+    public record VotingResultsResponse(String status, Long currentUserVoteGameId,
+                                        List<VoteCount> results) {}
 }
