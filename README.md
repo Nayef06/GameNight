@@ -4,6 +4,8 @@ GameNight is a deliberately small semester-project prototype. Users select the g
 
 This repository implements only that flow. It has no external game APIs, voting, chat, or other social features.
 
+It is initially a project for my software engineering class, but I also use a Java backend to gain more hands-on experience with the stack.
+
 ## Project layout
 
 - `frontend/` — Next.js and TypeScript UI
