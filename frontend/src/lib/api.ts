@@ -40,6 +40,14 @@ export type GameSelection = {
   gameTitle: string;
   selectedAt: string;
 };
+export type GameNightSession = {
+  id: number;
+  groupId: number;
+  createdBy: string;
+  createdAt: string;
+  status: "OPEN" | "CLOSED";
+  candidates: { id: number; title: string }[];
+};
 export type Group = { id: number; name: string; joinCode: string; memberCount: number };
 export type GroupMember = { id: number; username: string; creator: boolean };
 export type GroupDetails = {

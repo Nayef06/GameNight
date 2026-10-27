@@ -1,8 +1,8 @@
 # GameNight
 
-GameNight is a deliberately small semester-project prototype. Users select the games they own from a built-in catalog of real titles, create or join groups, see and filter the games owned by every member of a group, save tag preferences, and mark a shared game as recently played. Catalog games can have multiple tags.
+GameNight is a deliberately small semester-project prototype. Users select the games they own from a built-in catalog of real titles, create or join groups, see and filter the games owned by every member of a group, save tag preferences, mark a shared game as recently played, and create a GameNight session with 2–5 shared candidate games. Catalog games can have multiple tags.
 
-This repository implements only that flow. It has no external game APIs, voting, sessions, chat, or other social features.
+This repository implements only that flow. It has no external game APIs, voting, chat, or other social features.
 
 ## Project layout
 
@@ -79,7 +79,8 @@ Use two browser profiles (or a normal and private window) so both users can stay
 7. Confirm **Shared Games** lists only `Lethal Company` and `Terraria`, then select multiple tags to match all of them and try the multiplayer and minimum-player filters.
 8. Clear the filters and confirm both shared games return.
 9. Choose one of the shared games and confirm it appears under **Recently Chosen** and remains in the shared-game list with a small ranking penalty.
-10. Refresh the page. The members, shared games, and recent selection should still be present because they are stored in PostgreSQL.
+10. Create a GameNight session with both shared games, then open its detail page to see the candidates. A second open session cannot be created for the group.
+11. Refresh the page. The members, shared games, recent selection, and session should still be present because they are stored in PostgreSQL.
 
 ## API
 
@@ -105,10 +106,15 @@ Authentication endpoints return a JWT. Send it to every other endpoint as `Autho
 | GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: repeated `tags` (all must match), `multiplayerSupport`, `minPlayers` |
 | POST | `/api/groups/{groupId}/selections` | `{ "gameId": 12 }` |
 | GET | `/api/groups/{groupId}/selections/recent` | — |
+| POST | `/api/groups/{groupId}/sessions` | `{ "gameIds": [1, 3] }` |
+| GET | `/api/groups/{groupId}/sessions/active` | —; returns 204 if none is open |
+| GET | `/api/groups/{groupId}/sessions/{sessionId}` | — |
 
 Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. Each matching preferred tag adds one point per member, as do a matching multiplayer preference and support for their preferred player count. The three most recent selections receive a two-point ranking penalty without being removed. Shared games appear in score order, with tied top scores highlighted in green. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
 
-On startup, JPA adds tag storage and the catalog is seeded. Existing games remain in users' libraries; catalog matches get catalog metadata, while older custom games remain visible with their previous genre shown as one tag. New library additions must come from the catalog. Existing user preferences remain stored and are exposed as preferred tags.
+Any group member can create a session with 2–5 distinct games currently owned by every member. A group can have one open session at a time. Sessions start as `OPEN`; closing and voting are not implemented yet.
+
+On startup, JPA adds tag and session storage and the catalog is seeded. Existing games remain in users' libraries; catalog matches get catalog metadata, while older custom games remain visible with their previous genre shown as one tag. New library additions must come from the catalog. Existing user preferences remain stored and are exposed as preferred tags.
 
 ## Checks
 

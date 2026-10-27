@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, GameSelection, GroupDetails, SharedGame } from "@/lib/api";
+import { api, GameNightSession, GameSelection, GroupDetails, SharedGame } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ export default function GroupPage() {
   const [group, setGroup] = useState<GroupDetails | null>(null);
   const [sharedGames, setSharedGames] = useState<SharedGame[]>([]);
   const [recentSelections, setRecentSelections] = useState<GameSelection[]>([]);
+  const [activeSession, setActiveSession] = useState<GameNightSession | null>(null);
   const [choosingGameId, setChoosingGameId] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -41,16 +42,18 @@ export default function GroupPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [details, games, selections, tags] = await Promise.all([
+        const [details, games, selections, tags, session] = await Promise.all([
           api<GroupDetails>(`/groups/${id}`),
           api<SharedGame[]>(`/groups/${id}/shared-games`),
           api<GameSelection[]>(`/groups/${id}/selections/recent`),
           api<string[]>("/games/tags"),
+          api<GameNightSession | undefined>(`/groups/${id}/sessions/active`),
         ]);
         setGroup(details);
         setSharedGames(games);
         setRecentSelections(selections);
         setAvailableTags(tags);
+        setActiveSession(session ?? null);
       } catch (problem) {
         setError(problem instanceof Error ? problem.message : "Could not load group");
       }
@@ -186,6 +189,25 @@ export default function GroupPage() {
                       <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={leaveGroup}>Leave group</AlertDialogAction></AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>GameNight session</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {activeSession ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">This group already has an active GameNight session.</p>
+                    <h2 className="font-medium">Active GameNight Session #{activeSession.id}</h2>
+                    <p className="text-sm text-muted-foreground">Created: {new Date(activeSession.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium">Candidate games</p>
+                    <ul className="list-disc space-y-1 pl-5">
+                      {activeSession.candidates.map((game) => <li key={game.id}>{game.title}</li>)}
+                    </ul>
+                    <Button asChild variant="outline"><Link href={`/groups/${id}/sessions/${activeSession.id}`}>View Session</Link></Button>
+                  </>
+                ) : (
+                  <Button asChild><Link href={`/groups/${id}/sessions/new`}>Create GameNight Session</Link></Button>
                 )}
               </CardContent>
             </Card>
