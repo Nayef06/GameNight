@@ -33,6 +33,8 @@ export type Game = {
   multiplayerSupport: boolean;
   maxPlayers: number;
 };
+export type SteamConnection = { steamId: string | null };
+export type SteamSyncResult = { imported: number; alreadyInLibrary: number };
 export type SharedGame = Game & { preferenceScore: number };
 export type GameSelection = {
   id: number;

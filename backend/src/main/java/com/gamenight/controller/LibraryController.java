@@ -2,7 +2,9 @@ package com.gamenight.controller;
 
 import com.gamenight.dto.LibraryDtos.AddGameRequest;
 import com.gamenight.dto.LibraryDtos.GameResponse;
+import com.gamenight.dto.SteamDtos.SteamSyncResponse;
 import com.gamenight.service.LibraryService;
+import com.gamenight.service.SteamLibraryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,9 +22,11 @@ import java.util.List;
 @RequestMapping("/api/library")
 public class LibraryController {
     private final LibraryService libraryService;
+    private final SteamLibraryService steamLibraryService;
 
-    public LibraryController(LibraryService libraryService) {
+    public LibraryController(LibraryService libraryService, SteamLibraryService steamLibraryService) {
         this.libraryService = libraryService;
+        this.steamLibraryService = steamLibraryService;
     }
 
     @GetMapping
@@ -34,6 +38,11 @@ public class LibraryController {
     @ResponseStatus(HttpStatus.CREATED)
     public GameResponse addGame(@Valid @RequestBody AddGameRequest request) {
         return libraryService.addGame(request.gameId());
+    }
+
+    @PostMapping("/steam/sync")
+    public SteamSyncResponse syncSteamLibrary() {
+        return steamLibraryService.sync();
     }
 
     @DeleteMapping("/{gameId}")

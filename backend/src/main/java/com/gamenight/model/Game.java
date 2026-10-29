@@ -27,6 +27,9 @@ public class Game {
     @Column(name = "normalized_title", nullable = false, unique = true, length = 120)
     private String normalizedTitle;
 
+    @Column(name = "steam_app_id", unique = true)
+    private Long steamAppId;
+
     @Column(nullable = false, length = 50, columnDefinition = "varchar(50) default 'Other'")
     private String genre = "Other";
 
@@ -70,6 +73,8 @@ public class Game {
     public Long getId() { return id; }
     public String getTitle() { return title; }
     public String getNormalizedTitle() { return normalizedTitle; }
+    public Long getSteamAppId() { return steamAppId; }
+    public void setSteamAppId(Long steamAppId) { this.steamAppId = steamAppId; }
     public List<String> getTags() {
         return tags.isEmpty() ? List.of(genre) : tags.stream().sorted().toList();
     }

@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface GameRepository extends JpaRepository<Game, Long> {
     Optional<Game> findByNormalizedTitle(String normalizedTitle);
+    Optional<Game> findBySteamAppId(Long steamAppId);
 }
 

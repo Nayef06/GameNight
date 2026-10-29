@@ -46,6 +46,9 @@ public class AppUser {
     @Column(name = "preferred_player_count")
     private Integer preferredPlayerCount;
 
+    @Column(name = "steam_id", length = 17)
+    private String steamId;
+
     protected AppUser() {}
 
     public AppUser(String username, String passwordHash) {
@@ -60,6 +63,9 @@ public class AppUser {
     public Set<String> getPreferredTags() { return Set.copyOf(preferredTags); }
     public MultiplayerPreference getMultiplayerPreference() { return multiplayerPreference; }
     public Integer getPreferredPlayerCount() { return preferredPlayerCount; }
+    public String getSteamId() { return steamId; }
+
+    public void setSteamId(String steamId) { this.steamId = steamId; }
 
     public void updatePreferences(Set<String> tags, MultiplayerPreference preference,
                                   Integer playerCount) {

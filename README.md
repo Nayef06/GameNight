@@ -2,7 +2,7 @@
 
 GameNight is a deliberately small semester-project prototype. Users select the games they own from a built-in catalog of real titles, create or join groups, see and filter the games owned by every member of a group, save tag preferences, mark a shared game as recently played, and create a GameNight session with 2–5 shared candidate games. Members can vote for one candidate, change their vote while the session is open, and view vote counts. Catalog games can have multiple tags.
 
-This repository implements only that flow. It has no external game APIs, live voting, chat, or other social features.
+This repository implements only that flow plus optional, manual Steam library importing. It has no live voting, chat, or other social features.
 
 It is initially a project for my software engineering class, but I also use a Java backend to gain more hands-on experience with the stack.
 
@@ -64,9 +64,12 @@ The default values match `docker-compose.yml` and are suitable for local develop
 | `DATABASE_USERNAME` | `gamenight` | Database username |
 | `DATABASE_PASSWORD` | `gamenight` | Database password |
 | `JWT_SECRET` | development-only value | Base64-encoded JWT signing key |
+| `STEAM_API_KEY` | unset | Server-side Steam Web API key for owned-game importing |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8080/api` | API base URL used by the UI |
 
 Use a new Base64-encoded secret of at least 32 bytes outside local development.
+
+To use Steam importing, obtain a Steam Web API key from [Steam's API key page](https://steamcommunity.com/dev/apikey), set `STEAM_API_KEY` in the backend environment, and restart the API. On **My Library**, enter your numeric SteamID64 and select **Save and Import**. Later, select **Sync Steam Library** to import newly discovered games. The Steam [GetOwnedGames API](https://partner.steamgames.com/doc/webapi/IPlayerService) returns games only when their ownership details are visible to the key holder. Private or otherwise inaccessible libraries cannot be imported. Syncing only adds games; it does not remove games that disappear from Steam. Manual library entries remain available.
 
 ## Demo walkthrough
 
@@ -89,6 +92,8 @@ Use two browser profiles (or a normal and private window) so both users can stay
 ## API
 
 Authentication endpoints return a JWT. Send it to every other endpoint as `Authorization: Bearer <token>`.
+
+Steam endpoints: `GET /api/users/me/steam` reads the current user's saved SteamID64; `PUT /api/users/me/steam` accepts `{ "steamId": "7656119XXXXXXXXXX" }`; `POST /api/library/steam/sync` imports owned games and returns `imported` and `alreadyInLibrary` counts.
 
 | Method | Path | Body |
 | --- | --- | --- |

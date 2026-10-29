@@ -2,10 +2,11 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, Game } from "@/lib/api";
+import { api, Game, SteamConnection, SteamSyncResult } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { GameThumbnail } from "@/components/GameThumbnail";
 
@@ -15,6 +16,9 @@ export default function LibraryPage() {
   const [gameId, setGameId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [steamId, setSteamId] = useState("");
+  const [savedSteamId, setSavedSteamId] = useState<string | null>(null);
+  const [steamBusy, setSteamBusy] = useState(false);
 
   const loadGames = useCallback(async () => {
     try {
@@ -27,12 +31,15 @@ export default function LibraryPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [library, availableGames] = await Promise.all([
+        const [library, availableGames, steamConnection] = await Promise.all([
           api<Game[]>("/library"),
           api<Game[]>("/games"),
+          api<SteamConnection>("/users/me/steam"),
         ]);
         setGames(library);
         setCatalog(availableGames);
+        setSavedSteamId(steamConnection.steamId);
+        setSteamId(steamConnection.steamId ?? "");
       } catch (problem) {
         setError(problem instanceof Error ? problem.message : "Could not load games");
       }
@@ -72,6 +79,43 @@ export default function LibraryPage() {
     }
   }
 
+  async function syncSteam() {
+    setError("");
+    setMessage("");
+    setSteamBusy(true);
+    try {
+      const result = await api<SteamSyncResult>("/library/steam/sync", { method: "POST" });
+      await loadGames();
+      setMessage(`Imported ${result.imported} new ${result.imported === 1 ? "game" : "games"}. ${result.alreadyInLibrary} ${result.alreadyInLibrary === 1 ? "game was" : "games were"} already in your library.`);
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Could not sync Steam library");
+    } finally {
+      setSteamBusy(false);
+    }
+  }
+
+  async function saveAndImport(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setSteamBusy(true);
+    try {
+      const connection = await api<SteamConnection>("/users/me/steam", {
+        method: "PUT",
+        body: { steamId },
+      });
+      setSavedSteamId(connection.steamId);
+      setSteamId(connection.steamId ?? "");
+      const result = await api<SteamSyncResult>("/library/steam/sync", { method: "POST" });
+      await loadGames();
+      setMessage(`Imported ${result.imported} new ${result.imported === 1 ? "game" : "games"}. ${result.alreadyInLibrary} ${result.alreadyInLibrary === 1 ? "game was" : "games were"} already in your library.`);
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Could not import Steam library");
+    } finally {
+      setSteamBusy(false);
+    }
+  }
+
   return (
     <RequireAuth>
       <div className="space-y-6">
@@ -90,6 +134,19 @@ export default function LibraryPage() {
               {selectedGame && <div className="flex items-center gap-3"><GameThumbnail title={selectedGame.title} /><p className="text-sm text-muted-foreground">Tags: {selectedGame.tags.join(", ")} · {selectedGame.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}</p></div>}
               <Button disabled={!gameId}>Add to library</Button>
             </form>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Steam Library</CardTitle><CardDescription>Enter your SteamID64 to import accessible owned games.</CardDescription></CardHeader>
+          <CardContent className="space-y-4">
+            <form className="space-y-4" onSubmit={saveAndImport}>
+              <div className="space-y-2">
+                <Label htmlFor="steam-id">SteamID64</Label>
+                <Input id="steam-id" inputMode="numeric" pattern="7656119[0-9]{10}" maxLength={17} value={steamId} onChange={(event) => setSteamId(event.target.value)} required />
+              </div>
+              <Button disabled={steamBusy}>Save and Import</Button>
+            </form>
+            {savedSteamId && <Button type="button" variant="outline" disabled={steamBusy} onClick={syncSteam}>Sync Steam Library</Button>}
           </CardContent>
         </Card>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
