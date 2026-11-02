@@ -45,7 +45,11 @@ export default function RegisterPage() {
       <CardContent className="space-y-4">
         <form className="space-y-4" onSubmit={submit}>
           <div className="space-y-2"><Label htmlFor="username">Username</Label><Input id="username" autoComplete="username" minLength={3} maxLength={50} value={username} onChange={(e) => setUsername(e.target.value)} required /></div>
-          <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" autoComplete="new-password" minLength={6} aria-describedby="password-hint" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <p id="password-hint" className="text-sm text-muted-foreground">At least 6 characters.</p>
+          </div>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <Button className="w-full" disabled={busy}>{busy ? "Creating..." : "Register"}</Button>
         </form>
