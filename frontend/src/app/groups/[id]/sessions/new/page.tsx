@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { api, GameNightSession, SharedGame } from "@/lib/api";
+import { api, GameNightSession, PLATFORMS, SharedGame } from "@/lib/api";
 
 export default function CreateSessionPage() {
   const { id } = useParams<{ id: string }>();
@@ -83,7 +83,10 @@ export default function CreateSessionPage() {
                 <label key={game.id} className="flex items-center gap-2">
                   <Checkbox checked={selectedIds.includes(game.id)} onCheckedChange={() => toggleGame(game.id)}
                     disabled={saving || (!selectedIds.includes(game.id) && selectedIds.length >= 5)} />
-                  <span>{game.title}</span>
+                  <span>
+                    {game.title} — {game.platforms.map((platform) => PLATFORMS[platform]).join(", ")}
+                    {game.platforms.length > 1 && <span className="block text-sm text-muted-foreground">Members own this game on different platforms. Cross-play compatibility has not been verified.</span>}
+                  </span>
                 </label>
               ))}
             </fieldset>

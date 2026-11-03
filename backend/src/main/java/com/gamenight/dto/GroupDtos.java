@@ -3,6 +3,7 @@ package com.gamenight.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import com.gamenight.model.GamingPlatform;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,6 +13,11 @@ public final class GroupDtos {
 
     public record CreateGroupRequest(@NotBlank @Size(max = 80) String name) {}
     public record JoinGroupRequest(@NotBlank @Size(min = 6, max = 6) String joinCode) {}
+    public record DiscordWebhookRequest(@NotBlank @Size(max = 300) String webhookUrl) {
+        @Override
+        public String toString() { return "DiscordWebhookRequest[webhookUrl=REDACTED]"; }
+    }
+    public record DiscordWebhookStatus(boolean discordWebhookConfigured) {}
     public record CreateGameSelectionRequest(@NotNull Long gameId) {}
     public record GameSelectionResponse(Long id, Long gameId, String gameTitle, Instant selectedAt) {}
     public record GroupSummary(Long id, String name, String joinCode, long memberCount) {}
@@ -22,7 +28,8 @@ public final class GroupDtos {
             List<String> tags,
             boolean multiplayerSupport,
             int maxPlayers,
-            int preferenceScore
+            int preferenceScore,
+            List<GamingPlatform> platforms
     ) {}
     public record GroupDetails(
             Long id,
@@ -31,6 +38,7 @@ public final class GroupDtos {
             String createdBy,
             Instant createdAt,
             boolean currentUserIsCreator,
+            boolean discordWebhookConfigured,
             List<GroupMember> members
     ) {}
 }

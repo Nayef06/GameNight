@@ -2,6 +2,8 @@ package com.gamenight.controller;
 
 import com.gamenight.dto.GroupDtos.CreateGameSelectionRequest;
 import com.gamenight.dto.GroupDtos.CreateGroupRequest;
+import com.gamenight.dto.GroupDtos.DiscordWebhookRequest;
+import com.gamenight.dto.GroupDtos.DiscordWebhookStatus;
 import com.gamenight.dto.GroupDtos.GameSelectionResponse;
 import com.gamenight.dto.GroupDtos.GroupDetails;
 import com.gamenight.dto.GroupDtos.GroupSummary;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,6 +62,19 @@ public class GroupController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeMember(@PathVariable Long groupId, @PathVariable Long userId) {
         groupService.removeMember(groupId, userId);
+    }
+
+    @PutMapping("/{groupId}/discord-webhook")
+    public DiscordWebhookStatus saveDiscordWebhook(@PathVariable Long groupId,
+                                                    @Valid @RequestBody DiscordWebhookRequest request) {
+        groupService.saveDiscordWebhook(groupId, request.webhookUrl());
+        return new DiscordWebhookStatus(true);
+    }
+
+    @DeleteMapping("/{groupId}/discord-webhook")
+    public DiscordWebhookStatus removeDiscordWebhook(@PathVariable Long groupId) {
+        groupService.removeDiscordWebhook(groupId);
+        return new DiscordWebhookStatus(false);
     }
 
     @PostMapping("/{groupId}/leave")

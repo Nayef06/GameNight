@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, Game, SteamConnection, SteamSyncResult } from "@/lib/api";
+import { api, Game, GamingPlatform, LibraryGame, PLATFORMS, SteamConnection, SteamSyncResult } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,9 +11,10 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { GameThumbnail } from "@/components/GameThumbnail";
 
 export default function LibraryPage() {
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<LibraryGame[]>([]);
   const [catalog, setCatalog] = useState<Game[]>([]);
   const [gameId, setGameId] = useState("");
+  const [platform, setPlatform] = useState<GamingPlatform>("STEAM");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [steamId, setSteamId] = useState("");
@@ -22,7 +23,7 @@ export default function LibraryPage() {
 
   const loadGames = useCallback(async () => {
     try {
-      setGames(await api<Game[]>("/library"));
+      setGames(await api<LibraryGame[]>("/library"));
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not load library");
     }
@@ -32,7 +33,7 @@ export default function LibraryPage() {
     async function load() {
       try {
         const [library, availableGames, steamConnection] = await Promise.all([
-          api<Game[]>("/library"),
+          api<LibraryGame[]>("/library"),
           api<Game[]>("/games"),
           api<SteamConnection>("/users/me/steam"),
         ]);
@@ -52,9 +53,9 @@ export default function LibraryPage() {
     setError("");
     setMessage("");
     try {
-      await api<Game>("/library", {
+      await api<LibraryGame>("/library", {
         method: "POST",
-        body: { gameId: Number(gameId) },
+        body: { gameId: Number(gameId), platform },
       });
       setGameId("");
       await loadGames();
@@ -64,14 +65,14 @@ export default function LibraryPage() {
     }
   }
 
-  const availableGames = catalog.filter((game) => !games.some((owned) => owned.id === game.id));
+  const availableGames = catalog.filter((game) => !games.some((owned) => owned.id === game.id && owned.platform === platform));
   const selectedGame = catalog.find((game) => game.id === Number(gameId));
 
-  async function removeGame(gameId: number) {
+  async function removeGame(gameId: number, platform: GamingPlatform) {
     setError("");
     setMessage("");
     try {
-      await api<void>(`/library/${gameId}`, { method: "DELETE" });
+      await api<void>(`/library/${gameId}?platform=${platform}`, { method: "DELETE" });
       await loadGames();
       setMessage("Game removed.");
     } catch (problem) {
@@ -131,6 +132,15 @@ export default function LibraryPage() {
                   {availableGames.map((game) => <NativeSelectOption key={game.id} value={game.id}>{game.title}</NativeSelectOption>)}
                 </NativeSelect>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="game-platform">Platform</Label>
+                <NativeSelect id="game-platform" className="w-full" value={platform} onChange={(event) => {
+                  setPlatform(event.target.value as GamingPlatform);
+                  setGameId("");
+                }}>
+                  {Object.entries(PLATFORMS).map(([value, label]) => <NativeSelectOption key={value} value={value}>{label}</NativeSelectOption>)}
+                </NativeSelect>
+              </div>
               {selectedGame && <div className="flex items-center gap-3"><GameThumbnail title={selectedGame.title} /><p className="text-sm text-muted-foreground">Tags: {selectedGame.tags.join(", ")} · {selectedGame.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}</p></div>}
               <Button disabled={!gameId}>Add to library</Button>
             </form>
@@ -157,15 +167,15 @@ export default function LibraryPage() {
             {games.length === 0 ? <p className="text-sm text-muted-foreground">You have not added any games yet.</p> : (
               <ul className="divide-y divide-border">
                 {games.map((game) => (
-                  <li className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={game.id}>
+                  <li className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={`${game.id}-${game.platform}`}>
                     <div className="flex min-w-0 items-center gap-3">
                       <GameThumbnail title={game.title} />
                       <div className="min-w-0 space-y-1">
-                        <p className="font-medium">{game.title}</p>
+                        <p className="font-medium">{game.title} — {PLATFORMS[game.platform]}</p>
                         <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · {game.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}</p>
                       </div>
                     </div>
-                    <Button type="button" size="sm" variant="destructive" onClick={() => removeGame(game.id)}>Remove</Button>
+                    <Button type="button" size="sm" variant="destructive" onClick={() => removeGame(game.id, game.platform)}>Remove</Button>
                   </li>
                 ))}
               </ul>

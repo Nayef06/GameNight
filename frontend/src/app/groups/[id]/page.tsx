@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, GameNightSession, GameSelection, GroupDetails, SharedGame } from "@/lib/api";
+import { api, GameNightSession, GameSelection, GroupDetails, PLATFORMS, SharedGame } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,8 @@ export default function GroupPage() {
   const [appliedFilterQuery, setAppliedFilterQuery] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [discordBusy, setDiscordBusy] = useState(false);
 
   const loadSharedGames = useCallback(async (query = "") => {
     setSharedGames(await api<SharedGame[]>(`/groups/${id}/shared-games${query}`));
@@ -71,6 +73,25 @@ export default function GroupPage() {
       setAppliedFilterQuery(query);
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not filter shared games");
+    }
+  }
+
+  async function configureDiscord(remove = false) {
+    setError("");
+    setMessage("");
+    setDiscordBusy(true);
+    try {
+      const status = await api<{ discordWebhookConfigured: boolean }>(`/groups/${id}/discord-webhook`, {
+        method: remove ? "DELETE" : "PUT",
+        ...(remove ? {} : { body: { webhookUrl } }),
+      });
+      setGroup((current) => current ? { ...current, ...status } : current);
+      setWebhookUrl("");
+      setMessage(remove ? "Discord webhook removed." : "Discord webhook saved.");
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Could not configure Discord");
+    } finally {
+      setDiscordBusy(false);
     }
   }
 
@@ -193,6 +214,24 @@ export default function GroupPage() {
               </CardContent>
             </Card>
             <Card>
+              <CardHeader><CardTitle>Discord Integration</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">{group.discordWebhookConfigured ? "A Discord webhook is configured." : "No Discord webhook is configured."}</p>
+                {group.currentUserIsCreator && (
+                  <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void configureDiscord(); }}>
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-webhook">Webhook URL</Label>
+                      <Input id="discord-webhook" type="password" autoComplete="off" maxLength={300} value={webhookUrl} onChange={(event) => setWebhookUrl(event.target.value)} required />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button disabled={discordBusy || !webhookUrl.trim()}>Save</Button>
+                      <Button type="button" variant="outline" disabled={discordBusy || !group.discordWebhookConfigured} onClick={() => configureDiscord(true)}>Remove</Button>
+                    </div>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
               <CardHeader><CardTitle>GameNight session</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {activeSession ? (
@@ -255,6 +294,8 @@ export default function GroupPage() {
                           <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2"><strong className="font-medium">{game.title}</strong>{game.preferenceScore === sharedGames[0].preferenceScore && <Badge className="border-green-800 bg-green-950 text-green-300" variant="outline">Top score</Badge>}</div>
                             <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} · Max players: {game.maxPlayers}</p>
+                            <p className="text-sm text-muted-foreground">Platforms: {game.platforms.map((platform) => PLATFORMS[platform]).join(", ")}</p>
+                            {game.platforms.length > 1 && <p className="text-sm text-muted-foreground">Members own this game on different platforms. Cross-play compatibility has not been verified.</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-3">

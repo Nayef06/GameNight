@@ -1,8 +1,9 @@
 package com.gamenight.service;
 
-import com.gamenight.dto.LibraryDtos.GameResponse;
+import com.gamenight.dto.LibraryDtos.LibraryGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
+import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GameRepository;
 import com.gamenight.repository.UserGameRepository;
@@ -27,38 +28,41 @@ public class LibraryService {
     }
 
     @Transactional(readOnly = true)
-    public List<GameResponse> getLibrary() {
+    public List<LibraryGameResponse> getLibrary() {
         AppUser user = currentUserService.get();
         return userGameRepository.findByUserIdOrderByGameTitleAsc(user.getId()).stream()
-                .map(userGame -> toResponse(userGame.getGame()))
+                .map(this::toResponse)
                 .toList();
     }
 
     @Transactional
-    public GameResponse addGame(Long gameId) {
+    public LibraryGameResponse addGame(Long gameId, GamingPlatform requestedPlatform) {
+        GamingPlatform platform = requestedPlatform == null ? GamingPlatform.OTHER : requestedPlatform;
         AppUser user = currentUserService.get();
         Game game = gameRepository.findById(gameId)
                 .filter(candidate -> GameCatalog.contains(candidate.getNormalizedTitle()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Choose a game from the catalog."));
 
-        if (userGameRepository.existsByUserIdAndGameId(user.getId(), game.getId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already in your library.");
+        if (userGameRepository.existsByUserIdAndGameIdAndPlatform(user.getId(), game.getId(), platform)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already in your library on this platform.");
         }
-        userGameRepository.save(new UserGame(user, game));
-        return toResponse(game);
+        UserGame ownership = new UserGame(user, game, platform);
+        userGameRepository.save(ownership);
+        return toResponse(ownership);
     }
 
     @Transactional
-    public void removeGame(Long gameId) {
+    public void removeGame(Long gameId, GamingPlatform platform) {
         AppUser user = currentUserService.get();
-        if (userGameRepository.deleteByUserIdAndGameId(user.getId(), gameId) == 0) {
+        if (userGameRepository.deleteByUserIdAndGameIdAndPlatform(user.getId(), gameId, platform) == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game is not in your library.");
         }
     }
 
-    private GameResponse toResponse(Game game) {
-        return new GameResponse(game.getId(), game.getTitle(), game.getTags(),
-                game.isMultiplayerSupport(), game.getMaxPlayers());
+    private LibraryGameResponse toResponse(UserGame ownership) {
+        Game game = ownership.getGame();
+        return new LibraryGameResponse(game.getId(), game.getTitle(), game.getTags(),
+                game.isMultiplayerSupport(), game.getMaxPlayers(), ownership.getPlatform());
     }
 }

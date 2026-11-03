@@ -6,6 +6,7 @@ import com.gamenight.dto.GroupDtos.GroupSummary;
 import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
+import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.GameGroup;
 import com.gamenight.model.GroupGameSelection;
 import com.gamenight.model.GroupMembership;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -94,7 +96,32 @@ public class GroupService {
                 .toList();
         return new GroupDetails(group.getId(), group.getName(), group.getJoinCode(),
                 group.getCreatedBy().getUsername(), group.getCreatedAt(),
-                Objects.equals(user.getId(), creatorId), members);
+                Objects.equals(user.getId(), creatorId), group.isDiscordWebhookConfigured(), members);
+    }
+
+    @Transactional
+    public void saveDiscordWebhook(Long groupId, String webhookUrl) {
+        GameGroup group = requireGroupCreator(groupId);
+        String validatedUrl = webhookUrl == null ? "" : webhookUrl.trim();
+        if (!DiscordWebhookClient.isValidWebhookUrl(validatedUrl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enter a valid Discord HTTPS webhook URL.");
+        }
+        group.setDiscordWebhookUrl(validatedUrl);
+    }
+
+    @Transactional
+    public void removeDiscordWebhook(Long groupId) {
+        requireGroupCreator(groupId).setDiscordWebhookUrl(null);
+    }
+
+    private GameGroup requireGroupCreator(Long groupId) {
+        AppUser user = currentUserService.get();
+        GameGroup group = requireGroupMember(groupId, user);
+        if (!Objects.equals(user.getId(), group.getCreatedBy().getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only the group creator can configure Discord.");
+        }
+        return group;
     }
 
     @Transactional
@@ -161,11 +188,13 @@ public class GroupService {
                 .map(Game::getId)
                 .collect(Collectors.toSet());
 
-        Map<Long, Integer> ownerCounts = new HashMap<>();
+        Map<Long, Set<Long>> owners = new HashMap<>();
+        Map<Long, Set<GamingPlatform>> platforms = new HashMap<>();
         Map<Long, Game> games = new HashMap<>();
         for (UserGame userGame : userGameRepository.findByUserIdIn(memberIds)) {
             Game game = userGame.getGame();
-            ownerCounts.merge(game.getId(), 1, Integer::sum);
+            owners.computeIfAbsent(game.getId(), ignored -> new HashSet<>()).add(userGame.getUser().getId());
+            platforms.computeIfAbsent(game.getId(), ignored -> new HashSet<>()).add(userGame.getPlatform());
             games.put(game.getId(), game);
         }
 
@@ -174,7 +203,7 @@ public class GroupService {
                 .filter(tag -> !tag.isBlank())
                 .toList();
         return games.values().stream()
-                .filter(game -> ownerCounts.get(game.getId()) == memberIds.size())
+                .filter(game -> owners.get(game.getId()).size() == memberIds.size())
                 .filter(game -> tags.stream().allMatch(tag -> game.getTags().stream()
                         .anyMatch(value -> value.equalsIgnoreCase(tag))))
                 .filter(game -> multiplayerSupport == null
@@ -183,7 +212,8 @@ public class GroupService {
                 .map(game -> new SharedGameResponse(game.getId(), game.getTitle(), game.getTags(),
                         game.isMultiplayerSupport(), game.getMaxPlayers(),
                         calculatePreferenceScore(game, groupMembers)
-                                - (recentlySelectedGameIds.contains(game.getId()) ? 2 : 0)))
+                                - (recentlySelectedGameIds.contains(game.getId()) ? 2 : 0),
+                        platforms.get(game.getId()).stream().sorted().toList()))
                 .sorted(Comparator.comparingInt(SharedGameResponse::preferenceScore).reversed()
                         .thenComparing(SharedGameResponse::title, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(SharedGameResponse::title))

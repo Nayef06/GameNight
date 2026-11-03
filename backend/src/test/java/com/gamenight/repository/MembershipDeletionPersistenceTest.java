@@ -2,6 +2,7 @@ package com.gamenight.repository;
 
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
+import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.GameGroup;
 import com.gamenight.model.GroupMembership;
 import com.gamenight.model.UserGame;
@@ -30,10 +31,10 @@ class MembershipDeletionPersistenceTest {
                 "Terraria", "terraria", Set.of("Survival", "Sandbox"), true, 8));
         userGameRepository.saveAndFlush(new UserGame(user, game));
 
-        assertThat(userGameRepository.deleteByUserIdAndGameId(user.getId(), game.getId())).isEqualTo(1);
+        assertThat(userGameRepository.deleteByUserIdAndGameIdAndPlatform(user.getId(), game.getId(), GamingPlatform.OTHER)).isEqualTo(1);
         entityManager.clear();
-        assertThat(userGameRepository.existsByUserIdAndGameId(user.getId(), game.getId())).isFalse();
-        assertThat(userGameRepository.deleteByUserIdAndGameId(user.getId(), game.getId())).isZero();
+        assertThat(userGameRepository.existsByUserIdAndGameIdAndPlatform(user.getId(), game.getId(), GamingPlatform.OTHER)).isFalse();
+        assertThat(userGameRepository.deleteByUserIdAndGameIdAndPlatform(user.getId(), game.getId(), GamingPlatform.OTHER)).isZero();
     }
 
     @Test

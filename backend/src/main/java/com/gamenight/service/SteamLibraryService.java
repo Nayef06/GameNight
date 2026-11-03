@@ -4,6 +4,7 @@ import com.gamenight.dto.SteamDtos.SteamConnectionResponse;
 import com.gamenight.dto.SteamDtos.SteamSyncResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
+import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GameRepository;
 import com.gamenight.repository.UserGameRepository;
@@ -83,11 +84,18 @@ public class SteamLibraryService {
                 }
                 game = gameRepository.save(game);
             }
-            if (userGameRepository.existsByUserIdAndGameId(user.getId(), game.getId())) {
+            if (userGameRepository.existsByUserIdAndGameIdAndPlatform(user.getId(), game.getId(), GamingPlatform.STEAM)) {
                 alreadyOwned++;
             } else {
-                userGameRepository.save(new UserGame(user, game));
-                imported++;
+                UserGame legacy = userGameRepository
+                        .findByUserIdAndGameIdAndPlatformUnconfirmedTrue(user.getId(), game.getId()).orElse(null);
+                if (legacy != null) {
+                    legacy.confirmSteamPlatform();
+                    alreadyOwned++;
+                } else {
+                    userGameRepository.save(new UserGame(user, game, GamingPlatform.STEAM));
+                    imported++;
+                }
             }
         }
         return new SteamSyncResponse(imported, alreadyOwned);

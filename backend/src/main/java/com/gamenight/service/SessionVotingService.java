@@ -28,17 +28,20 @@ public class SessionVotingService {
     private final GameNightSessionRepository sessionRepository;
     private final SessionVoteRepository voteRepository;
     private final NotificationService notificationService;
+    private final DiscordNotificationService discordNotifications;
 
     public SessionVotingService(CurrentUserService currentUserService,
                                 GroupMembershipRepository membershipRepository,
                                 GameNightSessionRepository sessionRepository,
                                 SessionVoteRepository voteRepository,
-                                NotificationService notificationService) {
+                                NotificationService notificationService,
+                                DiscordNotificationService discordNotifications) {
         this.currentUserService = currentUserService;
         this.membershipRepository = membershipRepository;
         this.sessionRepository = sessionRepository;
         this.voteRepository = voteRepository;
         this.notificationService = notificationService;
+        this.discordNotifications = discordNotifications;
     }
 
     @Transactional
@@ -101,6 +104,9 @@ public class SessionVotingService {
         }
         session.close();
         notificationService.notifySessionClosed(session.getGroup());
+        if (session.getGroup().isDiscordWebhookConfigured()) {
+            discordNotifications.sessionClosed(session.getGroup(), results(groupId, sessionId).results());
+        }
     }
 
     private GameNightSession requireSession(Long groupId, Long sessionId, AppUser user,

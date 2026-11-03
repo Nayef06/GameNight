@@ -34,12 +34,14 @@ public class GameNightSessionService {
     private final GameRepository gameRepository;
     private final GroupService groupService;
     private final NotificationService notificationService;
+    private final DiscordNotificationService discordNotifications;
 
     public GameNightSessionService(CurrentUserService currentUserService, GroupRepository groupRepository,
                                    GroupMembershipRepository membershipRepository,
                                    GameNightSessionRepository sessionRepository,
                                    GameRepository gameRepository, GroupService groupService,
-                                   NotificationService notificationService) {
+                                   NotificationService notificationService,
+                                   DiscordNotificationService discordNotifications) {
         this.currentUserService = currentUserService;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
@@ -47,6 +49,7 @@ public class GameNightSessionService {
         this.gameRepository = gameRepository;
         this.groupService = groupService;
         this.notificationService = notificationService;
+        this.discordNotifications = discordNotifications;
     }
 
     @Transactional
@@ -83,6 +86,7 @@ public class GameNightSessionService {
         }
         GameNightSession session = sessionRepository.save(new GameNightSession(group, user, candidates));
         notificationService.notifySessionCreated(group, user);
+        discordNotifications.sessionCreated(group);
         return toResponse(session);
     }
 

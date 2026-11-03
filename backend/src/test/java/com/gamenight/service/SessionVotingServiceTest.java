@@ -37,6 +37,7 @@ class SessionVotingServiceTest {
     @Mock private GameNightSessionRepository sessionRepository;
     @Mock private SessionVoteRepository voteRepository;
     @Mock private NotificationService notificationService;
+    @Mock private DiscordNotificationService discordNotifications;
 
     private SessionVotingService service;
     private AppUser user;
@@ -48,7 +49,7 @@ class SessionVotingServiceTest {
     @BeforeEach
     void setUp() {
         service = new SessionVotingService(currentUserService, membershipRepository,
-                sessionRepository, voteRepository, notificationService);
+                sessionRepository, voteRepository, notificationService, discordNotifications);
         user = mock(AppUser.class);
         group = mock(GameGroup.class);
         terraria = game(1L, "Terraria");

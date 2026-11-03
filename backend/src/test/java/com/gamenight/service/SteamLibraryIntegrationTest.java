@@ -2,6 +2,7 @@ package com.gamenight.service;
 
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
+import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.GameGroup;
 import com.gamenight.model.GroupMembership;
 import com.gamenight.model.UserGame;
@@ -90,7 +91,7 @@ class SteamLibraryIntegrationTest {
     @Test
     void importReusesManualGameAndRepeatedSyncIsAdditive() throws Exception {
         Game terraria = gameRepository.findByNormalizedTitle("terraria").orElseThrow();
-        userGameRepository.save(new UserGame(nayef, terraria));
+        userGameRepository.save(new UserGame(nayef, terraria, GamingPlatform.STEAM));
         saveSteamId();
         when(steamClient.getOwnedGames(STEAM_ID)).thenReturn(List.of(
                 new SteamOwnedGamesClient.OwnedGame(105600, "Terraria"),
@@ -148,7 +149,7 @@ class SteamLibraryIntegrationTest {
     @Test
     void failedImportKeepsManualLibraryEntry() throws Exception {
         Game terraria = gameRepository.findByNormalizedTitle("terraria").orElseThrow();
-        userGameRepository.save(new UserGame(nayef, terraria));
+        userGameRepository.save(new UserGame(nayef, terraria, GamingPlatform.STEAM));
         saveSteamId();
         when(steamClient.getOwnedGames(STEAM_ID)).thenThrow(new ResponseStatusException(
                 org.springframework.http.HttpStatus.BAD_GATEWAY, "This Steam library may be private or unavailable."));

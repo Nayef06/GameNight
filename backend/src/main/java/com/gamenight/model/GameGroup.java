@@ -1,5 +1,6 @@
 package com.gamenight.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -32,6 +33,10 @@ public class GameGroup {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    @JsonIgnore
+    @Column(name = "discord_webhook_url", length = 300)
+    private String discordWebhookUrl;
+
     protected GameGroup() {}
 
     public GameGroup(String name, String joinCode, AppUser createdBy) {
@@ -45,5 +50,9 @@ public class GameGroup {
     public String getJoinCode() { return joinCode; }
     public AppUser getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
+    @JsonIgnore
+    public String getDiscordWebhookUrl() { return discordWebhookUrl; }
+    public void setDiscordWebhookUrl(String discordWebhookUrl) { this.discordWebhookUrl = discordWebhookUrl; }
+    public boolean isDiscordWebhookConfigured() { return discordWebhookUrl != null; }
 }
 

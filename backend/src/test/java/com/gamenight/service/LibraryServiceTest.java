@@ -1,8 +1,9 @@
 package com.gamenight.service;
 
-import com.gamenight.dto.LibraryDtos.GameResponse;
+import com.gamenight.dto.LibraryDtos.LibraryGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
+import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GameRepository;
 import com.gamenight.repository.UserGameRepository;
@@ -43,12 +44,12 @@ class LibraryServiceTest {
         Game game = game(10L, "Lethal Company", List.of("Co-op", "Horror"), true, 4);
         when(currentUserService.get()).thenReturn(user);
         when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
-        when(userGameRepository.existsByUserIdAndGameId(1L, 10L)).thenReturn(false);
+        when(userGameRepository.existsByUserIdAndGameIdAndPlatform(1L, 10L, GamingPlatform.OTHER)).thenReturn(false);
 
-        GameResponse response = libraryService.addGame(10L);
+        LibraryGameResponse response = libraryService.addGame(10L, GamingPlatform.OTHER);
 
-        assertThat(response).isEqualTo(new GameResponse(
-                10L, "Lethal Company", List.of("Co-op", "Horror"), true, 4));
+        assertThat(response).isEqualTo(new LibraryGameResponse(
+                10L, "Lethal Company", List.of("Co-op", "Horror"), true, 4, GamingPlatform.OTHER));
         verify(gameRepository, never()).save(any());
         verify(userGameRepository).save(any(UserGame.class));
     }
@@ -60,7 +61,7 @@ class LibraryServiceTest {
         when(currentUserService.get()).thenReturn(user);
         when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
 
-        assertThatThrownBy(() -> libraryService.addGame(10L))
+        assertThatThrownBy(() -> libraryService.addGame(10L, GamingPlatform.OTHER))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Choose a game from the catalog.");
         verify(gameRepository, never()).save(any());
@@ -73,11 +74,11 @@ class LibraryServiceTest {
         Game game = game(10L, "Terraria", List.of("Survival"), true, 8);
         when(currentUserService.get()).thenReturn(user);
         when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
-        when(userGameRepository.existsByUserIdAndGameId(1L, 10L)).thenReturn(true);
+        when(userGameRepository.existsByUserIdAndGameIdAndPlatform(1L, 10L, GamingPlatform.OTHER)).thenReturn(true);
 
-        assertThatThrownBy(() -> libraryService.addGame(10L))
+        assertThatThrownBy(() -> libraryService.addGame(10L, GamingPlatform.OTHER))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Game is already in your library.");
+                .hasMessageContaining("Game is already in your library on this platform.");
         verify(userGameRepository, never()).save(any());
     }
 

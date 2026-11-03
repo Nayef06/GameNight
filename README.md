@@ -2,7 +2,7 @@
 
 GameNight is a deliberately small semester-project prototype. Users select the games they own from a built-in catalog of real titles, create or join groups, see and filter the games owned by every member of a group, save tag preferences, mark a shared game as recently played, and create a GameNight session with 2–5 shared candidate games. Members can vote for one candidate, change their vote while the session is open, and view vote counts. Catalog games can have multiple tags.
 
-This repository implements only that flow plus optional, manual Steam library importing. Vote counts update automatically while a session is open, and members receive basic in-app notifications when sessions are created or closed.
+This repository implements that flow plus optional Steam library importing, a platform field on library ownership, and optional Discord webhook announcements when sessions start or close. Vote counts update automatically while a session is open, and members receive basic in-app notifications when sessions are created or closed.
 
 It is initially a project for my software engineering class, but I also use a Java backend to gain more hands-on experience with the stack.
 
@@ -71,6 +71,10 @@ Use a new Base64-encoded secret of at least 32 bytes outside local development.
 
 To use Steam importing, obtain a Steam Web API key from [Steam's API key page](https://steamcommunity.com/dev/apikey), set `STEAM_API_KEY` in the backend environment, and restart the API. On **My Library**, enter your numeric SteamID64 and select **Save and Import**. Later, select **Sync Steam Library** to import newly discovered games. The Steam [GetOwnedGames API](https://partner.steamgames.com/doc/webapi/IPlayerService) returns games only when their ownership details are visible to the key holder. Private or otherwise inaccessible libraries cannot be imported. Syncing only adds games; it does not remove games that disappear from Steam. Manual library entries remain available.
 
+Manual catalog additions include a **Platform** dropdown: Steam, Epic Games, Xbox, PlayStation, Nintendo Switch, or Other. Platform belongs to each user's ownership record; the same user can own a title on multiple platforms. Removing an entry removes only that platform. Steam sync adds Steam ownership while preserving other platforms. Shared games still match by title and count each member once, regardless of platform. Shared lists show the platforms and a note when they differ; cross-play compatibility is not verified or used in ranking.
+
+On a group's existing page, the creator can save or remove a Discord channel webhook under **Discord Integration**. Only standard HTTPS webhook endpoints on `discord.com` or `discordapp.com` are accepted. The saved URL is a backend secret: API responses and the UI show only whether it is configured. Session creation posts a short announcement; closing posts the winner, tied games, or that no votes were submitted. Messages use Discord's [Execute Webhook endpoint](https://docs.discord.com/developers/resources/webhook#execute-webhook), with mentions disabled. Delivery occurs after the session transaction commits, with short timeouts and no redirects. Failures are logged without the URL or token and do not undo sessions, votes, or in-app notifications. No bot, OAuth, or additional platform APIs are involved.
+
 ## Demo walkthrough
 
 Use two browser profiles (or a normal and private window) so both users can stay logged in.
@@ -103,14 +107,16 @@ Steam endpoints: `GET /api/users/me/steam` reads the current user's saved SteamI
 | GET | `/api/games` | Available catalog games with tags and player metadata |
 | GET | `/api/games/tags` | Available tags |
 | GET | `/api/library` | — |
-| POST | `/api/library` | `{ "gameId": 12 }` where the ID comes from `/api/games` |
-| DELETE | `/api/library/{gameId}` | — |
+| POST | `/api/library` | `{ "gameId": 12, "platform": "XBOX" }` where the ID comes from `/api/games`; omitted platform defaults to `OTHER` |
+| DELETE | `/api/library/{gameId}?platform=XBOX` | —; removes only this platform (defaults to `OTHER`) |
 | GET | `/api/preferences` | — |
 | PUT | `/api/preferences` | `{ "preferredTags": ["Survival", "Co-op"], "multiplayerPreference": "MULTIPLAYER", "preferredPlayerCount": 4 }` |
 | GET | `/api/groups` | — |
 | POST | `/api/groups` | `{ "name": "Friday Night Group" }` |
 | POST | `/api/groups/join` | `{ "joinCode": "AB12CD" }` |
 | GET | `/api/groups/{groupId}` | — |
+| PUT | `/api/groups/{groupId}/discord-webhook` | `{ "webhookUrl": "https://discord.com/api/webhooks/.../..." }`; creator only |
+| DELETE | `/api/groups/{groupId}/discord-webhook` | —; creator only |
 | DELETE | `/api/groups/{groupId}/members/{userId}` | — |
 | POST | `/api/groups/{groupId}/leave` | — |
 | GET | `/api/groups/{groupId}/shared-games` | Optional query parameters: repeated `tags` (all must match), `multiplayerSupport`, `minPlayers` |
@@ -130,6 +136,8 @@ Only members can view a group's details, shared games, and recent selections, or
 Any group member can create a session with 2–5 distinct games currently owned by every member. A group can have one open session at a time. Sessions start as `OPEN`. Each member has one vote per session and may change it while voting is open. Results include every candidate, sorted by vote count and then alphabetically. Only the group creator can close voting. Closed results remain available, and a new session can then be created. Voting does not update recently chosen games. The session page checks results every five seconds while voting is open and stops checking when voting closes or the page is left. Session creation notifies other current group members; closure notifies all current group members. Notifications are stored in PostgreSQL and can be marked as read.
 
 On startup, JPA adds tag, session, vote, and notification storage and the catalog is seeded. Existing games remain in users' libraries; catalog matches get catalog metadata, while older custom games remain visible with their previous genre shown as one tag. New library additions must come from the catalog. Existing user preferences remain stored and are exposed as preferred tags.
+
+The ownership-platform migration runs automatically with Flyway before JPA updates the schema. It preserves existing ownership IDs and replaces uniqueness by user/game with uniqueness by user/game/platform. The old schema did not retain per-ownership import provenance, so legacy entries start as `Other`. Their next successful Steam sync confirms matching legacy entries as `Steam`; unmatched entries stay `Other`. New manual entries retain the selected platform, and all new Steam imports are labeled `Steam`.
 
 ## Checks
 

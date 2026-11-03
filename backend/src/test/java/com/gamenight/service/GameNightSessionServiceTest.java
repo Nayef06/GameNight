@@ -38,6 +38,7 @@ class GameNightSessionServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private GroupService groupService;
     @Mock private NotificationService notificationService;
+    @Mock private DiscordNotificationService discordNotifications;
 
     private GameNightSessionService service;
     private AppUser user;
@@ -47,7 +48,7 @@ class GameNightSessionServiceTest {
     void setUp() {
         service = new GameNightSessionService(currentUserService, groupRepository,
                 membershipRepository, sessionRepository, gameRepository, groupService,
-                notificationService);
+                notificationService, discordNotifications);
         user = mock(AppUser.class);
         group = mock(GameGroup.class);
         lenient().when(user.getId()).thenReturn(1L);
@@ -134,7 +135,7 @@ class GameNightSessionServiceTest {
 
     private void allowSharedGames(Long... ids) {
         when(groupService.getSharedGames(10L)).thenReturn(java.util.Arrays.stream(ids)
-                .map(id -> new SharedGameResponse(id, "Game " + id, List.of(), true, 4, 0))
+                .map(id -> new SharedGameResponse(id, "Game " + id, List.of(), true, 4, 0, List.of()))
                 .toList());
     }
 

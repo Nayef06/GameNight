@@ -34,8 +34,18 @@ export type Game = {
   maxPlayers: number;
 };
 export type SteamConnection = { steamId: string | null };
+export const PLATFORMS = {
+  STEAM: "Steam",
+  EPIC_GAMES: "Epic Games",
+  XBOX: "Xbox",
+  PLAYSTATION: "PlayStation",
+  NINTENDO_SWITCH: "Nintendo Switch",
+  OTHER: "Other",
+} as const;
+export type GamingPlatform = keyof typeof PLATFORMS;
+export type LibraryGame = Game & { platform: GamingPlatform };
 export type SteamSyncResult = { imported: number; alreadyInLibrary: number };
-export type SharedGame = Game & { preferenceScore: number };
+export type SharedGame = Game & { preferenceScore: number; platforms: GamingPlatform[] };
 export type GameSelection = {
   id: number;
   gameId: number;
@@ -70,6 +80,7 @@ export type GroupDetails = {
   createdBy: string;
   createdAt: string;
   currentUserIsCreator: boolean;
+  discordWebhookConfigured: boolean;
   members: GroupMember[];
 };
 export type MultiplayerPreference = "NO_PREFERENCE" | "MULTIPLAYER" | "SINGLE_PLAYER";
