@@ -15,6 +15,7 @@ export function Nav() {
           <div className="flex flex-wrap items-center gap-1">
             <Button asChild variant="ghost" size="sm"><Link href="/library">Library</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/groups">Groups</Link></Button>
+            <Button asChild variant="ghost" size="sm"><Link href="/notifications">Notifications</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href="/preferences">Preferences</Link></Button>
             <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
           </div>

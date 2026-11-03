@@ -2,6 +2,7 @@ package com.gamenight.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ public class SteamOwnedGamesClient {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public SteamOwnedGamesClient(@Value("${steam.api.key:}") String apiKey, ObjectMapper objectMapper) {
         this(apiKey, objectMapper, createRestTemplate());
     }

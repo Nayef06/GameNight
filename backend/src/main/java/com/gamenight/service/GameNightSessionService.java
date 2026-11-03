@@ -33,17 +33,20 @@ public class GameNightSessionService {
     private final GameNightSessionRepository sessionRepository;
     private final GameRepository gameRepository;
     private final GroupService groupService;
+    private final NotificationService notificationService;
 
     public GameNightSessionService(CurrentUserService currentUserService, GroupRepository groupRepository,
                                    GroupMembershipRepository membershipRepository,
                                    GameNightSessionRepository sessionRepository,
-                                   GameRepository gameRepository, GroupService groupService) {
+                                   GameRepository gameRepository, GroupService groupService,
+                                   NotificationService notificationService) {
         this.currentUserService = currentUserService;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
         this.sessionRepository = sessionRepository;
         this.gameRepository = gameRepository;
         this.groupService = groupService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -79,6 +82,7 @@ public class GameNightSessionService {
                     "Candidate games must be owned by every group member.");
         }
         GameNightSession session = sessionRepository.save(new GameNightSession(group, user, candidates));
+        notificationService.notifySessionCreated(group, user);
         return toResponse(session);
     }
 

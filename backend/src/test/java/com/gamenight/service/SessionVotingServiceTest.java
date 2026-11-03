@@ -36,6 +36,7 @@ class SessionVotingServiceTest {
     @Mock private GroupMembershipRepository membershipRepository;
     @Mock private GameNightSessionRepository sessionRepository;
     @Mock private SessionVoteRepository voteRepository;
+    @Mock private NotificationService notificationService;
 
     private SessionVotingService service;
     private AppUser user;
@@ -47,7 +48,7 @@ class SessionVotingServiceTest {
     @BeforeEach
     void setUp() {
         service = new SessionVotingService(currentUserService, membershipRepository,
-                sessionRepository, voteRepository);
+                sessionRepository, voteRepository, notificationService);
         user = mock(AppUser.class);
         group = mock(GameGroup.class);
         terraria = game(1L, "Terraria");
@@ -124,6 +125,7 @@ class SessionVotingServiceTest {
         service.close(10L, 20L);
 
         assertThat(session.getStatus()).isEqualTo(GameNightSessionStatus.CLOSED);
+        verify(notificationService).notifySessionClosed(group);
     }
 
     @Test
@@ -135,6 +137,7 @@ class SessionVotingServiceTest {
         assertThatThrownBy(() -> service.close(10L, 20L))
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("403 FORBIDDEN");
         assertThat(session.getStatus()).isEqualTo(GameNightSessionStatus.OPEN);
+        verify(notificationService, never()).notifySessionClosed(any());
     }
 
     @Test

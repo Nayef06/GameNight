@@ -31,6 +31,34 @@ export default function SessionPage() {
     }).catch((problem) => setError(problem instanceof Error ? problem.message : "Could not load session"));
   }, [id, sessionId]);
 
+  const status = results?.status ?? session?.status;
+
+  useEffect(() => {
+    if (!id || !sessionId || status !== "OPEN") return;
+
+    let active = true;
+    let inFlight = false;
+    const interval = window.setInterval(() => {
+      if (inFlight) return;
+      inFlight = true;
+      api<SessionVotingResults>(`/groups/${id}/sessions/${sessionId}/results`)
+        .then((updated) => {
+          if (active) {
+            setResults((previous) => previous?.status === "CLOSED" ? previous : updated);
+          }
+        })
+        .catch(() => {
+          // The next interval retries a temporary network failure.
+        })
+        .finally(() => { inFlight = false; });
+    }, 5000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [id, sessionId, status]);
+
   async function refreshResults() {
     setError("");
     try {
@@ -81,7 +109,6 @@ export default function SessionPage() {
     }
   }
 
-  const status = results?.status ?? session?.status;
   const showResults = results && (results.currentUserVoteGameId !== null || status === "CLOSED");
   const highestVotes = results?.results[0]?.votes ?? 0;
   const winners = highestVotes > 0

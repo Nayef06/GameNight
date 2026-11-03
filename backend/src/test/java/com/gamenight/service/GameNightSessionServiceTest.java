@@ -37,6 +37,7 @@ class GameNightSessionServiceTest {
     @Mock private GameNightSessionRepository sessionRepository;
     @Mock private GameRepository gameRepository;
     @Mock private GroupService groupService;
+    @Mock private NotificationService notificationService;
 
     private GameNightSessionService service;
     private AppUser user;
@@ -45,7 +46,8 @@ class GameNightSessionServiceTest {
     @BeforeEach
     void setUp() {
         service = new GameNightSessionService(currentUserService, groupRepository,
-                membershipRepository, sessionRepository, gameRepository, groupService);
+                membershipRepository, sessionRepository, gameRepository, groupService,
+                notificationService);
         user = mock(AppUser.class);
         group = mock(GameGroup.class);
         lenient().when(user.getId()).thenReturn(1L);
@@ -74,6 +76,7 @@ class GameNightSessionServiceTest {
         assertThat(response.candidates()).extracting(candidate -> candidate.title())
                 .containsExactly("Minecraft", "Terraria");
         verify(sessionRepository).save(any(GameNightSession.class));
+        verify(notificationService).notifySessionCreated(group, user);
     }
 
     @Test
@@ -86,6 +89,7 @@ class GameNightSessionServiceTest {
         assertThatThrownBy(() -> service.getActive(10L))
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("403 FORBIDDEN");
         verify(sessionRepository, never()).save(any());
+        verify(notificationService, never()).notifySessionCreated(any(), any());
     }
 
     @Test

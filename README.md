@@ -2,7 +2,7 @@
 
 GameNight is a deliberately small semester-project prototype. Users select the games they own from a built-in catalog of real titles, create or join groups, see and filter the games owned by every member of a group, save tag preferences, mark a shared game as recently played, and create a GameNight session with 2–5 shared candidate games. Members can vote for one candidate, change their vote while the session is open, and view vote counts. Catalog games can have multiple tags.
 
-This repository implements only that flow plus optional, manual Steam library importing. It has no live voting, chat, or other social features.
+This repository implements only that flow plus optional, manual Steam library importing. Vote counts update automatically while a session is open, and members receive basic in-app notifications when sessions are created or closed.
 
 It is initially a project for my software engineering class, but I also use a Java backend to gain more hands-on experience with the stack.
 
@@ -85,9 +85,10 @@ Use two browser profiles (or a normal and private window) so both users can stay
 8. Clear the filters and confirm both shared games return.
 9. Choose one of the shared games and confirm it appears under **Recently Chosen** and remains in the shared-game list with a small ranking penalty.
 10. Create a GameNight session with both shared games, then open its detail page and vote for one candidate. A second open session cannot be created for the group.
-11. In the other browser profile, vote for a candidate. Use **Refresh Results** to see the new counts, and try changing a vote.
-12. As the group creator, select **Close Voting**. The final counts and winner (or tie) remain visible, and the group can create another session.
-13. Refresh the page. The members, shared games, recent selection, session, and votes should still be present because they are stored in PostgreSQL.
+11. In the other browser profile, vote for a candidate. The first browser's counts update within about five seconds without a page refresh. Try changing a vote.
+12. Open **Notifications** in the other browser profile to see the session creation message, then mark it as read.
+13. As the group creator, select **Close Voting**. The final counts and winner (or tie) remain visible, and the group can create another session. Group members can see the closure message on **Notifications**.
+14. Refresh the page. The members, shared games, recent selection, session, votes, and notifications should still be present because they are stored in PostgreSQL.
 
 ## API
 
@@ -121,16 +122,18 @@ Steam endpoints: `GET /api/users/me/steam` reads the current user's saved SteamI
 | POST | `/api/groups/{groupId}/sessions/{sessionId}/vote` | `{ "gameId": 12 }` |
 | GET | `/api/groups/{groupId}/sessions/{sessionId}/results` | — |
 | POST | `/api/groups/{groupId}/sessions/{sessionId}/close` | — |
+| GET | `/api/notifications` | —; returns only the current user's notifications |
+| PATCH | `/api/notifications/{id}/read` | —; marks one of the current user's notifications as read |
 
 Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. Each matching preferred tag adds one point per member, as do a matching multiplayer preference and support for their preferred player count. The three most recent selections receive a two-point ranking penalty without being removed. Shared games appear in score order, with tied top scores highlighted in green. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
 
-Any group member can create a session with 2–5 distinct games currently owned by every member. A group can have one open session at a time. Sessions start as `OPEN`. Each member has one vote per session and may change it while voting is open. Results include every candidate, sorted by vote count and then alphabetically. Only the group creator can close voting. Closed results remain available, and a new session can then be created. Voting does not update recently chosen games.
+Any group member can create a session with 2–5 distinct games currently owned by every member. A group can have one open session at a time. Sessions start as `OPEN`. Each member has one vote per session and may change it while voting is open. Results include every candidate, sorted by vote count and then alphabetically. Only the group creator can close voting. Closed results remain available, and a new session can then be created. Voting does not update recently chosen games. The session page checks results every five seconds while voting is open and stops checking when voting closes or the page is left. Session creation notifies other current group members; closure notifies all current group members. Notifications are stored in PostgreSQL and can be marked as read.
 
-On startup, JPA adds tag, session, and vote storage and the catalog is seeded. Existing games remain in users' libraries; catalog matches get catalog metadata, while older custom games remain visible with their previous genre shown as one tag. New library additions must come from the catalog. Existing user preferences remain stored and are exposed as preferred tags.
+On startup, JPA adds tag, session, vote, and notification storage and the catalog is seeded. Existing games remain in users' libraries; catalog matches get catalog metadata, while older custom games remain visible with their previous genre shown as one tag. New library additions must come from the catalog. Existing user preferences remain stored and are exposed as preferred tags.
 
 ## Checks
 
 ```bash
 cd backend && mvn test
-cd frontend && npm run build
+cd frontend && npm test && npm run build
 ```

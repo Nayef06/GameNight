@@ -55,6 +55,12 @@ export type SessionVotingResults = {
   currentUserVoteGameId: number | null;
   results: { gameId: number; title: string; votes: number }[];
 };
+export type AppNotification = {
+  id: number;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+};
 export type Group = { id: number; name: string; joinCode: string; memberCount: number };
 export type GroupMember = { id: number; username: string; creator: boolean };
 export type GroupDetails = {

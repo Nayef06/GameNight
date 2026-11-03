@@ -27,15 +27,18 @@ public class SessionVotingService {
     private final GroupMembershipRepository membershipRepository;
     private final GameNightSessionRepository sessionRepository;
     private final SessionVoteRepository voteRepository;
+    private final NotificationService notificationService;
 
     public SessionVotingService(CurrentUserService currentUserService,
                                 GroupMembershipRepository membershipRepository,
                                 GameNightSessionRepository sessionRepository,
-                                SessionVoteRepository voteRepository) {
+                                SessionVoteRepository voteRepository,
+                                NotificationService notificationService) {
         this.currentUserService = currentUserService;
         this.membershipRepository = membershipRepository;
         this.sessionRepository = sessionRepository;
         this.voteRepository = voteRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -97,6 +100,7 @@ public class SessionVotingService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Voting is already closed.");
         }
         session.close();
+        notificationService.notifySessionClosed(session.getGroup());
     }
 
     private GameNightSession requireSession(Long groupId, Long sessionId, AppUser user,
