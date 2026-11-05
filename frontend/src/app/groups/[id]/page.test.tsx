@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import GroupPage from "./page";
-import { api } from "@/lib/api";
+import { api, GroupStatistics } from "@/lib/api";
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "1" }), useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a> }));
@@ -14,10 +14,14 @@ vi.mock("@/lib/api", async (original) => ({ ...await original<typeof import("@/l
 const apiMock = vi.mocked(api);
 let creator: boolean;
 let mixedPlatforms: boolean;
+let statistics: GroupStatistics;
+let statisticsFailure: boolean;
 
 beforeEach(() => {
   creator = true;
   mixedPlatforms = true;
+  statistics = { completedSessions: 8, gamesSelected: 12, mostSelectedGame: { title: "Terraria", count: 5 } };
+  statisticsFailure = false;
   apiMock.mockReset();
   apiMock.mockImplementation(async (path, options) => {
     if (path === "/groups/1") return {
@@ -25,6 +29,14 @@ beforeEach(() => {
       discordWebhookConfigured: true,
     } as never;
     if (path === "/groups/1/discord-webhook") return { discordWebhookConfigured: options?.method !== "DELETE" } as never;
+    if (path === "/groups/1/statistics") {
+      if (statisticsFailure) throw new Error("Could not load group statistics");
+      return statistics as never;
+    }
+    if (path === "/groups/1/selections") {
+      statistics = { ...statistics, gamesSelected: 13, mostSelectedGame: { title: "Terraria", count: 6 } };
+      return { id: 1, gameId: 10, gameTitle: "Terraria", selectedAt: "2026-11-05T20:00:00Z" } as never;
+    }
     if (path.endsWith("/shared-games")) return [{
       id: 10, title: "Terraria", tags: ["Survival"], multiplayerSupport: true, maxPlayers: 8,
       preferenceScore: 0, platforms: mixedPlatforms ? ["STEAM", "XBOX"] : ["STEAM"],
@@ -65,4 +77,44 @@ test("a single platform shows its label without the different-platform warning",
   render(<GroupPage />);
   await waitFor(() => expect(screen.getByText("Platforms: Steam")).toBeTruthy());
   expect(screen.queryByText(/Cross-play compatibility/)).toBeNull();
+});
+
+test("shows the three group statistics from the API", async () => {
+  render(<GroupPage />);
+  await screen.findByText("Group Statistics");
+  expect(screen.getByText("Completed Sessions: 8")).toBeTruthy();
+  expect(screen.getByText("Games Selected: 12")).toBeTruthy();
+  expect(screen.getByText("Most Selected Game: Terraria (5 times)")).toBeTruthy();
+});
+
+test("groups without activity show zero counts and None yet", async () => {
+  statistics = { completedSessions: 0, gamesSelected: 0, mostSelectedGame: null };
+  render(<GroupPage />);
+  await screen.findByText("Completed Sessions: 0");
+  expect(screen.getByText("Games Selected: 0")).toBeTruthy();
+  expect(screen.getByText("Most Selected Game: None yet")).toBeTruthy();
+});
+
+test("refreshes statistics after recording a game selection", async () => {
+  render(<GroupPage />);
+  await screen.findByText("Games Selected: 12");
+  fireEvent.click(screen.getByRole("button", { name: "Choose game" }));
+  await screen.findByText("Games Selected: 13");
+  expect(screen.getByText("Most Selected Game: Terraria (6 times)")).toBeTruthy();
+  expect(screen.getByText("Completed Sessions: 8")).toBeTruthy();
+});
+
+test("uses singular time for one recorded selection", async () => {
+  statistics = { completedSessions: 0, gamesSelected: 1, mostSelectedGame: { title: "Terraria", count: 1 } };
+  render(<GroupPage />);
+  await screen.findByText("Most Selected Game: Terraria (1 time)");
+});
+
+test("statistics errors preserve the group page and do not display misleading zero counts", async () => {
+  statisticsFailure = true;
+  render(<GroupPage />);
+  await screen.findByRole("heading", { name: "Friday" });
+  expect(screen.getByRole("alert").textContent).toBe("Could not load group statistics");
+  expect(screen.queryByText("Completed Sessions: 0")).toBeNull();
+  expect(screen.getByRole("button", { name: "Choose game" })).toBeTruthy();
 });

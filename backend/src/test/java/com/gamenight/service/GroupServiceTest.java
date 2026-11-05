@@ -10,6 +10,7 @@ import com.gamenight.model.GroupMembership;
 import com.gamenight.model.MultiplayerPreference;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GroupGameSelectionRepository;
+import com.gamenight.repository.GameNightSessionRepository;
 import com.gamenight.repository.GroupMembershipRepository;
 import com.gamenight.repository.GroupRepository;
 import com.gamenight.repository.UserGameRepository;
@@ -43,6 +44,7 @@ class GroupServiceTest {
     @Mock private GroupMembershipRepository membershipRepository;
     @Mock private UserGameRepository userGameRepository;
     @Mock private GroupGameSelectionRepository selectionRepository;
+    @Mock private GameNightSessionRepository sessionRepository;
 
     private GroupService groupService;
 
@@ -51,7 +53,7 @@ class GroupServiceTest {
         lenient().when(selectionRepository.findTop3ByGroupIdOrderBySelectedAtDescIdDesc(anyLong()))
                 .thenReturn(List.of());
         groupService = new GroupService(currentUserService, groupRepository, membershipRepository,
-                userGameRepository, selectionRepository);
+                userGameRepository, selectionRepository, sessionRepository);
     }
 
     @Test
@@ -230,7 +232,7 @@ class GroupServiceTest {
         List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0, List.of(GamingPlatform.OTHER)));
+                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
     }
 
     @Test
@@ -251,8 +253,8 @@ class GroupServiceTest {
         List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new SharedGameResponse(101L, "Minecraft", List.of("Survival"), true, 8, 0, List.of(GamingPlatform.OTHER)),
-                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0, List.of(GamingPlatform.OTHER))
+                new SharedGameResponse(101L, "Minecraft", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)),
+                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER))
         );
     }
 
@@ -263,7 +265,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, List.of("survival"), null, null))
-                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0, List.of(GamingPlatform.OTHER)));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
     }
 
     @Test
@@ -277,7 +279,7 @@ class GroupServiceTest {
 
         assertThat(groupService.getSharedGames(10L, List.of("sandbox", "Survival"), null, null))
                 .containsExactly(new SharedGameResponse(
-                        100L, "Terraria", List.of("Sandbox", "Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
+                        100L, "Terraria", List.of("Sandbox", "Survival"), true, 8, 4, List.of(GamingPlatform.OTHER)));
     }
 
     @Test
@@ -287,7 +289,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, false, null))
-                .containsExactly(new SharedGameResponse(101L, "Portal", List.of("Puzzle"), false, 1, 0, List.of(GamingPlatform.OTHER)));
+                .containsExactly(new SharedGameResponse(101L, "Portal", List.of("Puzzle"), false, 1, 2, List.of(GamingPlatform.OTHER)));
     }
 
     @Test
@@ -297,7 +299,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, null, 4))
-                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 0, List.of(GamingPlatform.OTHER)));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
     }
 
     @Test
@@ -325,10 +327,10 @@ class GroupServiceTest {
         assertThat(groupService.getSharedGames(10L))
                 .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("Terraria", 3),
-                        org.assertj.core.groups.Tuple.tuple("Overcooked! 2", 2),
-                        org.assertj.core.groups.Tuple.tuple("Phasmophobia", 2),
-                        org.assertj.core.groups.Tuple.tuple("Among Us", 1));
+                        org.assertj.core.groups.Tuple.tuple("Terraria", 5),
+                        org.assertj.core.groups.Tuple.tuple("Overcooked! 2", 4),
+                        org.assertj.core.groups.Tuple.tuple("Phasmophobia", 4),
+                        org.assertj.core.groups.Tuple.tuple("Among Us", 3));
     }
 
     @Test
@@ -357,8 +359,8 @@ class GroupServiceTest {
         assertThat(groupService.getSharedGames(10L))
                 .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("Terraria", 3),
-                        org.assertj.core.groups.Tuple.tuple("Portal", 0));
+                        org.assertj.core.groups.Tuple.tuple("Terraria", 5),
+                        org.assertj.core.groups.Tuple.tuple("Portal", 2));
     }
 
     @Test
@@ -378,7 +380,7 @@ class GroupServiceTest {
 
         assertThat(groupService.getSharedGames(10L))
                 .containsExactly(new SharedGameResponse(
-                        100L, "Terraria", List.of("Survival"), true, 8, 0, List.of(GamingPlatform.OTHER)));
+                        100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
     }
 
     @Test
@@ -392,8 +394,8 @@ class GroupServiceTest {
         assertThat(groupService.getSharedGames(10L, List.of("Survival"), null, null))
                 .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("Alpha", 3),
-                        org.assertj.core.groups.Tuple.tuple("Zulu", 2));
+                        org.assertj.core.groups.Tuple.tuple("Alpha", 5),
+                        org.assertj.core.groups.Tuple.tuple("Zulu", 4));
     }
 
     @Test
@@ -413,10 +415,61 @@ class GroupServiceTest {
         assertThat(groupService.getSharedGames(10L))
                 .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("Older", 3),
-                        org.assertj.core.groups.Tuple.tuple("Alpha", 1),
-                        org.assertj.core.groups.Tuple.tuple("Bravo", 1),
-                        org.assertj.core.groups.Tuple.tuple("Charlie", 1));
+                        org.assertj.core.groups.Tuple.tuple("Older", 5),
+                        org.assertj.core.groups.Tuple.tuple("Alpha", 3),
+                        org.assertj.core.groups.Tuple.tuple("Bravo", 3),
+                        org.assertj.core.groups.Tuple.tuple("Charlie", 3));
+    }
+
+    @Test
+    void gamesAccommodatingTheWholeGroupGainTwoPointsAndSmallerGamesLoseTwoPoints() {
+        Game terraria = game(100L, "Terraria", "Survival", true, 8);
+        Game lethalCompany = game(101L, "Lethal Company", "Horror", true, 4);
+        Game itTakesTwo = game(102L, "It Takes Two", "Puzzle", true, 2);
+        Game celeste = game(103L, "Celeste", "Platformer", false, 1);
+        prepareGroupGames(4, terraria, lethalCompany, itTakesTwo, celeste);
+
+        assertThat(groupService.getSharedGames(10L))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Lethal Company", 2),
+                        org.assertj.core.groups.Tuple.tuple("Terraria", 2),
+                        org.assertj.core.groups.Tuple.tuple("Celeste", -2),
+                        org.assertj.core.groups.Tuple.tuple("It Takes Two", -2));
+    }
+
+    @Test
+    void missingInvalidAndPlaceholderPlayerCountsDoNotAdjustRanking() {
+        Game missing = game(100L, "Missing", "Other", false, 0);
+        Game invalid = game(101L, "Invalid", "Other", true, -1);
+        Game imported = game(102L, "Imported", "Other", false, 1);
+        prepareGroupGames(4, missing, invalid, imported);
+
+        assertThat(groupService.getSharedGames(10L))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Imported", 0),
+                        org.assertj.core.groups.Tuple.tuple("Invalid", 0),
+                        org.assertj.core.groups.Tuple.tuple("Missing", 0));
+    }
+
+    @Test
+    void groupSizeAdjustmentCombinesWithExistingPreferencesAndRecentPenalty() {
+        Game supporting = game(100L, "Supporting", "Co-op", true, 4);
+        Game smaller = game(101L, "Smaller", "Co-op", true, 2);
+        for (AppUser member : prepareGroupGames(4, supporting, smaller)) {
+            prefer(member, Set.of("Co-op"), MultiplayerPreference.MULTIPLAYER, 4);
+        }
+        GroupGameSelection supportingSelection = selection(supporting);
+        GroupGameSelection smallerSelection = selection(smaller);
+        when(selectionRepository.findTop3ByGroupIdOrderBySelectedAtDescIdDesc(10L))
+                .thenReturn(List.of(supportingSelection, smallerSelection, smallerSelection));
+
+        assertThat(groupService.getSharedGames(10L))
+                .extracting(SharedGameResponse::title, SharedGameResponse::preferenceScore)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("Supporting", 12),
+                        org.assertj.core.groups.Tuple.tuple("Smaller", 4));
     }
 
     @Test
@@ -477,6 +530,20 @@ class GroupServiceTest {
         when(userGameRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(ownerships);
         return currentUser;
+    }
+
+    private List<AppUser> prepareGroupGames(int memberCount, Game... games) {
+        List<AppUser> members = java.util.stream.LongStream.rangeClosed(1, memberCount)
+                .mapToObj(this::user).toList();
+        List<GroupMembership> memberships = members.stream().map(this::membership).toList();
+        List<UserGame> ownerships = members.stream().flatMap(member -> java.util.Arrays.stream(games)
+                .map(game -> ownership(game, member))).toList();
+        allowGroupAccess(members.getFirst(), 10L);
+        when(membershipRepository.findByGroupIdOrderByUserUsernameAsc(10L))
+                .thenReturn(memberships);
+        when(userGameRepository.findByUserIdIn(members.stream().map(AppUser::getId).toList()))
+                .thenReturn(ownerships);
+        return members;
     }
 
     private AppUser preferenceUser(Set<String> genres, MultiplayerPreference multiplayerPreference,

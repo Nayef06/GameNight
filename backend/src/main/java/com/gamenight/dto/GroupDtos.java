@@ -22,6 +22,8 @@ public final class GroupDtos {
     public record GameSelectionResponse(Long id, Long gameId, String gameTitle, Instant selectedAt) {}
     public record GroupSummary(Long id, String name, String joinCode, long memberCount) {}
     public record GroupMember(Long id, String username, boolean creator) {}
+    public record MostSelectedGame(String title, long count) {}
+    public record GroupStatistics(long completedSessions, long gamesSelected, MostSelectedGame mostSelectedGame) {}
     public record SharedGameResponse(
             Long id,
             String title,

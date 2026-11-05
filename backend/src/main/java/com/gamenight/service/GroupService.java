@@ -2,21 +2,26 @@ package com.gamenight.service;
 
 import com.gamenight.dto.GroupDtos.GroupDetails;
 import com.gamenight.dto.GroupDtos.GroupMember;
+import com.gamenight.dto.GroupDtos.GroupStatistics;
 import com.gamenight.dto.GroupDtos.GroupSummary;
+import com.gamenight.dto.GroupDtos.MostSelectedGame;
 import com.gamenight.dto.GroupDtos.SharedGameResponse;
 import com.gamenight.model.AppUser;
 import com.gamenight.model.Game;
 import com.gamenight.model.GamingPlatform;
 import com.gamenight.model.GameGroup;
+import com.gamenight.model.GameNightSessionStatus;
 import com.gamenight.model.GroupGameSelection;
 import com.gamenight.model.GroupMembership;
 import com.gamenight.model.MultiplayerPreference;
 import com.gamenight.model.UserGame;
 import com.gamenight.repository.GroupGameSelectionRepository;
+import com.gamenight.repository.GameNightSessionRepository;
 import com.gamenight.repository.GroupMembershipRepository;
 import com.gamenight.repository.GroupRepository;
 import com.gamenight.repository.UserGameRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,16 +47,18 @@ public class GroupService {
     private final GroupMembershipRepository membershipRepository;
     private final UserGameRepository userGameRepository;
     private final GroupGameSelectionRepository selectionRepository;
+    private final GameNightSessionRepository sessionRepository;
     private final SecureRandom random = new SecureRandom();
 
     public GroupService(CurrentUserService currentUserService, GroupRepository groupRepository,
                         GroupMembershipRepository membershipRepository, UserGameRepository userGameRepository,
-                        GroupGameSelectionRepository selectionRepository) {
+                        GroupGameSelectionRepository selectionRepository, GameNightSessionRepository sessionRepository) {
         this.currentUserService = currentUserService;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
         this.userGameRepository = userGameRepository;
         this.selectionRepository = selectionRepository;
+        this.sessionRepository = sessionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -97,6 +104,19 @@ public class GroupService {
         return new GroupDetails(group.getId(), group.getName(), group.getJoinCode(),
                 group.getCreatedBy().getUsername(), group.getCreatedAt(),
                 Objects.equals(user.getId(), creatorId), group.isDiscordWebhookConfigured(), members);
+    }
+
+    @Transactional(readOnly = true)
+    public GroupStatistics getStatistics(Long groupId) {
+        requireGroupMember(groupId, currentUserService.get());
+        MostSelectedGame mostSelectedGame = selectionRepository
+                .findMostSelectedGames(groupId, PageRequest.of(0, 1)).stream()
+                .findFirst()
+                .map(game -> new MostSelectedGame(game.getTitle(), game.getSelectionCount()))
+                .orElse(null);
+        return new GroupStatistics(
+                sessionRepository.countByGroupIdAndStatus(groupId, GameNightSessionStatus.CLOSED),
+                selectionRepository.countByGroupId(groupId), mostSelectedGame);
     }
 
     @Transactional
@@ -212,12 +232,24 @@ public class GroupService {
                 .map(game -> new SharedGameResponse(game.getId(), game.getTitle(), game.getTags(),
                         game.isMultiplayerSupport(), game.getMaxPlayers(),
                         calculatePreferenceScore(game, groupMembers)
+                                + calculateGroupSizeAdjustment(game, groupMembers.size())
                                 - (recentlySelectedGameIds.contains(game.getId()) ? 2 : 0),
                         platforms.get(game.getId()).stream().sorted().toList()))
                 .sorted(Comparator.comparingInt(SharedGameResponse::preferenceScore).reversed()
                         .thenComparing(SharedGameResponse::title, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(SharedGameResponse::title))
                 .toList();
+    }
+
+    private int calculateGroupSizeAdjustment(Game game, int groupSize) {
+        int maxPlayers = game.getMaxPlayers();
+        // Imports without metadata use Other/false/1 as placeholders, not a known capacity.
+        boolean placeholderMetadata = maxPlayers == 1 && !game.isMultiplayerSupport()
+                && game.getTags().equals(List.of("Other"));
+        if (maxPlayers < 1 || placeholderMetadata) {
+            return 0;
+        }
+        return maxPlayers >= groupSize ? 2 : -2;
     }
 
     public int calculatePreferenceScore(Game game, List<AppUser> groupMembers) {

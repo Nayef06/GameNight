@@ -6,6 +6,7 @@ import com.gamenight.dto.GroupDtos.DiscordWebhookRequest;
 import com.gamenight.dto.GroupDtos.DiscordWebhookStatus;
 import com.gamenight.dto.GroupDtos.GameSelectionResponse;
 import com.gamenight.dto.GroupDtos.GroupDetails;
+import com.gamenight.dto.GroupDtos.GroupStatistics;
 import com.gamenight.dto.GroupDtos.GroupSummary;
 import com.gamenight.dto.GroupDtos.JoinGroupRequest;
 import com.gamenight.dto.GroupDtos.SharedGameResponse;
@@ -56,6 +57,11 @@ public class GroupController {
     @GetMapping("/{groupId}")
     public GroupDetails getDetails(@PathVariable Long groupId) {
         return groupService.getDetails(groupId);
+    }
+
+    @GetMapping("/{groupId}/statistics")
+    public GroupStatistics getStatistics(@PathVariable Long groupId) {
+        return groupService.getStatistics(groupId);
     }
 
     @DeleteMapping("/{groupId}/members/{userId}")

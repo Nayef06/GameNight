@@ -115,6 +115,7 @@ Steam endpoints: `GET /api/users/me/steam` reads the current user's saved SteamI
 | POST | `/api/groups` | `{ "name": "Friday Night Group" }` |
 | POST | `/api/groups/join` | `{ "joinCode": "AB12CD" }` |
 | GET | `/api/groups/{groupId}` | — |
+| GET | `/api/groups/{groupId}/statistics` | —; members only |
 | PUT | `/api/groups/{groupId}/discord-webhook` | `{ "webhookUrl": "https://discord.com/api/webhooks/.../..." }`; creator only |
 | DELETE | `/api/groups/{groupId}/discord-webhook` | —; creator only |
 | DELETE | `/api/groups/{groupId}/members/{userId}` | — |
@@ -131,7 +132,9 @@ Steam endpoints: `GET /api/users/me/steam` reads the current user's saved SteamI
 | GET | `/api/notifications` | —; returns only the current user's notifications |
 | PATCH | `/api/notifications/{id}/read` | —; marks one of the current user's notifications as read |
 
-Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. Each matching preferred tag adds one point per member, as do a matching multiplayer preference and support for their preferred player count. The three most recent selections receive a two-point ranking penalty without being removed. Shared games appear in score order, with tied top scores highlighted in green. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
+Only members can view a group's details, shared games, and recent selections, or mark a shared game as played. Each matching preferred tag adds one point per member, as do a matching multiplayer preference and support for their preferred player count. Games with reliable player-count metadata gain two points when their capacity accommodates the actual group size and lose two points otherwise. Missing or invalid counts and imported default metadata do not change that score. The three most recent selections receive a two-point ranking penalty without being removed. Shared games appear in score order, with tied top scores highlighted in green. Only the group creator can remove another member, normal members can leave, and the creator cannot leave their own group. Usernames, normalized game titles, game ownerships, join codes, and memberships are protected by database uniqueness constraints.
+
+The group page shows completed sessions (status `CLOSED`), the total recorded game selections, and the most selected game with its count. Statistics use the full persisted selection history, with alphabetical ordering for ties; votes and voting winners are not selections. Empty groups show zero counts and “None yet.” Statistics are available only to current group members and refresh after a game is marked as played.
 
 Any group member can create a session with 2–5 distinct games currently owned by every member. A group can have one open session at a time. Sessions start as `OPEN`. Each member has one vote per session and may change it while voting is open. Results include every candidate, sorted by vote count and then alphabetically. Only the group creator can close voting. Closed results remain available, and a new session can then be created. Voting does not update recently chosen games. The session page checks results every five seconds while voting is open and stops checking when voting closes or the page is left. Session creation notifies other current group members; closure notifies all current group members. Notifications are stored in PostgreSQL and can be marked as read.
 

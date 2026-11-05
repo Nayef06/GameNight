@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { api, GameNightSession, GameSelection, GroupDetails, PLATFORMS, SharedGame } from "@/lib/api";
+import { api, GameNightSession, GameSelection, GroupDetails, GroupStatistics, PLATFORMS, SharedGame } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,8 @@ export default function GroupPage() {
   const [sharedGames, setSharedGames] = useState<SharedGame[]>([]);
   const [recentSelections, setRecentSelections] = useState<GameSelection[]>([]);
   const [activeSession, setActiveSession] = useState<GameNightSession | null>(null);
+  const [statistics, setStatistics] = useState<GroupStatistics | null>(null);
+  const [statisticsError, setStatisticsError] = useState("");
   const [choosingGameId, setChoosingGameId] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -39,6 +41,16 @@ export default function GroupPage() {
 
   const loadRecentSelections = useCallback(async () => {
     setRecentSelections(await api<GameSelection[]>(`/groups/${id}/selections/recent`));
+  }, [id]);
+
+  const loadStatistics = useCallback(async () => {
+    try {
+      setStatistics(await api<GroupStatistics>(`/groups/${id}/statistics`));
+      setStatisticsError("");
+    } catch (problem) {
+      setStatistics(null);
+      setStatisticsError(problem instanceof Error ? problem.message : "Could not load group statistics");
+    }
   }, [id]);
 
   useEffect(() => {
@@ -60,8 +72,11 @@ export default function GroupPage() {
         setError(problem instanceof Error ? problem.message : "Could not load group");
       }
     }
-    if (id) void load();
-  }, [id]);
+    if (id) {
+      void load();
+      void loadStatistics();
+    }
+  }, [id, loadStatistics]);
 
   async function applyFilters(event: FormEvent) {
     event.preventDefault();
@@ -162,6 +177,7 @@ export default function GroupPage() {
       await Promise.all([
         loadSharedGames(appliedFilterQuery),
         loadRecentSelections(),
+        loadStatistics(),
       ]);
       setMessage(`${game.title} marked as played.`);
     } catch (problem) {
@@ -306,6 +322,20 @@ export default function GroupPage() {
                     ))}</ul>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Group Statistics</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {statisticsError ? <p role="alert" className="text-destructive">{statisticsError}</p> : statistics ? (
+                  <>
+                    <p>Completed Sessions: {statistics.completedSessions}</p>
+                    <p>Games Selected: {statistics.gamesSelected}</p>
+                    <p>Most Selected Game: {statistics.mostSelectedGame
+                      ? `${statistics.mostSelectedGame.title} (${statistics.mostSelectedGame.count} ${statistics.mostSelectedGame.count === 1 ? "time" : "times"})`
+                      : "None yet"}</p>
+                  </>
+                ) : <p className="text-muted-foreground">Loading statistics...</p>}
               </CardContent>
             </Card>
             <Card>

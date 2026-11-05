@@ -73,6 +73,11 @@ export type AppNotification = {
 };
 export type Group = { id: number; name: string; joinCode: string; memberCount: number };
 export type GroupMember = { id: number; username: string; creator: boolean };
+export type GroupStatistics = {
+  completedSessions: number;
+  gamesSelected: number;
+  mostSelectedGame: { title: string; count: number } | null;
+};
 export type GroupDetails = {
   id: number;
   name: string;

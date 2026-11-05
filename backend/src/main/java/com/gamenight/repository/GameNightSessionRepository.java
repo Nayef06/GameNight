@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface GameNightSessionRepository extends JpaRepository<GameNightSession, Long> {
     Optional<GameNightSession> findByGroupIdAndStatus(Long groupId, GameNightSessionStatus status);
     Optional<GameNightSession> findByIdAndGroupId(Long id, Long groupId);
+    long countByGroupIdAndStatus(Long groupId, GameNightSessionStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from GameNightSession s where s.id = :sessionId and s.group.id = :groupId")
