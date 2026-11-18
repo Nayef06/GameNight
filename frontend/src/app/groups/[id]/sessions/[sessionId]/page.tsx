@@ -6,6 +6,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { api, GameNightSession, GroupDetails, SessionVotingResults } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
 export default function SessionPage() {
   const { id, sessionId } = useParams<{ id: string; sessionId: string }>();
@@ -117,45 +121,46 @@ export default function SessionPage() {
 
   return (
     <RequireAuth>
-      <div className="max-w-xl space-y-5">
-        <Button asChild variant="ghost" size="sm"><Link href={`/groups/${id}`}>Back to group</Link></Button>
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {message && <p role="status" className="text-sm">{message}</p>}
+      <div className="max-w-3xl space-y-6">
+        <Button asChild variant="ghost" size="sm"><Link href={`/groups/${id}`}><ArrowLeft className="size-4" /> Back to group</Link></Button>
+        {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+        {message && <p role="status" className="rounded-lg border bg-muted/40 p-3 text-sm">{message}</p>}
         {!session ? !error && <p>Loading session...</p> : (
           <>
-            <h1 className="text-2xl font-semibold">GameNight Session #{session.id}</h1>
-            <p className="text-sm text-muted-foreground">Created: {new Date(session.createdAt).toLocaleDateString()}</p>
-            <p className="text-sm text-muted-foreground">Status: {status}</p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-1"><h1 className="text-3xl font-semibold tracking-tight">GameNight Session #{session.id}</h1><p className="text-sm text-muted-foreground">Created: {new Date(session.createdAt).toLocaleDateString()}</p></div>
+              <Badge variant={status === "OPEN" ? "secondary" : "outline"}>Status: {status}</Badge>
+            </div>
             {status === "OPEN" && (
-              <form className="space-y-3" onSubmit={submitVote}>
-                <fieldset className="space-y-2" disabled={busy}>
-                  <legend className="font-medium">Choose a Game:</legend>
+              <Card><CardHeader><CardTitle>Choose a Game</CardTitle><CardDescription>Select one candidate. You can update your vote while voting is open.</CardDescription></CardHeader><CardContent>
+              <form className="space-y-4" onSubmit={submitVote}>
+                <fieldset className="space-y-3" disabled={busy}>
+                  <legend className="sr-only">Choose a Game:</legend>
+                  <RadioGroup value={selectedGameId?.toString()} onValueChange={(value) => setSelectedGameId(Number(value))}>
                   {session.candidates.map((game) => (
-                    <label className="flex items-center gap-2" key={game.id}>
-                      <input type="radio" name="game" value={game.id}
-                        checked={selectedGameId === game.id}
-                        onChange={() => setSelectedGameId(game.id)} />
-                      {game.title}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-xl border bg-muted/20 p-4 transition-colors hover:bg-muted/50 has-data-checked:border-foreground/60 has-data-checked:bg-muted" key={game.id}>
+                      <RadioGroupItem value={String(game.id)} disabled={busy} />
+                      <span className="font-medium">{game.title}</span>
                     </label>
                   ))}
+                  </RadioGroup>
                 </fieldset>
                 <Button type="submit" disabled={busy || selectedGameId === null}>Submit Vote</Button>
               </form>
+              </CardContent></Card>
             )}
             {showResults && (
-              <section className="space-y-3">
-                <h2 className="font-medium">Current Results</h2>
-                <ul className="space-y-1">
+              <Card><CardHeader><CardTitle>Current Results</CardTitle><CardDescription>Votes refresh automatically while the session is open.</CardDescription></CardHeader><CardContent className="space-y-4">
+                <ul className="space-y-3">
                   {results.results.map((game) => (
-                    <li key={game.gameId}>{game.title} — {game.votes} {game.votes === 1 ? "vote" : "votes"}</li>
+                    <li key={game.gameId} className="space-y-2"><div className="flex justify-between gap-3 text-sm"><span>{game.title} — {game.votes} {game.votes === 1 ? "vote" : "votes"}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${highestVotes ? (game.votes / highestVotes) * 100 : 0}%` }} /></div></li>
                   ))}
                 </ul>
-                <Button type="button" variant="outline" onClick={refreshResults} disabled={busy}>Refresh Results</Button>
-              </section>
+                <Button type="button" variant="outline" onClick={refreshResults} disabled={busy}><RefreshCw className="size-4" /> Refresh Results</Button>
+              </CardContent></Card>
             )}
             {status === "CLOSED" && results && (
-              <section className="space-y-2">
-                <h2 className="font-medium">Voting Closed</h2>
+              <Card><CardHeader><CardTitle>Voting Closed</CardTitle></CardHeader><CardContent className="space-y-2">
                 {winners.length === 0 ? <p>No votes were submitted.</p> : winners.length === 1 ? (
                   <>
                     <p>Most Voted Game: {winners[0].title}</p>
@@ -169,7 +174,7 @@ export default function SessionPage() {
                     </ul>
                   </>
                 )}
-              </section>
+              </CardContent></Card>
             )}
             {status === "OPEN" && isGroupCreator && (
               <Button type="button" variant="outline" onClick={closeVoting} disabled={busy}>Close Voting</Button>

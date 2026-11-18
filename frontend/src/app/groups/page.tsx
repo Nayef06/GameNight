@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ArrowRight, Plus, Users } from "lucide-react";
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -64,18 +65,18 @@ export default function GroupsPage() {
   return (
     <RequireAuth>
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">My Groups</h1>
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
+        <div className="space-y-1"><h1 className="text-3xl font-semibold tracking-tight">My Groups</h1><p className="text-sm text-muted-foreground">Your friends, shared games, and upcoming sessions.</p></div>
+        {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+        {message && <p role="status" className="rounded-lg border bg-muted/40 p-3 text-sm">{message}</p>}
         <Card>
-          <CardHeader><CardTitle>Groups</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Users className="size-4" /> Groups</CardTitle><CardDescription>{groups.length} {groups.length === 1 ? "group" : "groups"} in your circle</CardDescription></CardHeader>
           <CardContent>
-            {groups.length === 0 ? <p className="text-sm text-muted-foreground">You have not joined any groups yet.</p> : (
-              <ul className="divide-y divide-border">
+            {groups.length === 0 ? <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">You have not joined any groups yet.</p> : (
+              <ul className="grid gap-3 sm:grid-cols-2">
                 {groups.map((group) => (
-                  <li className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={group.id}>
+                  <li className="flex items-center justify-between gap-3 rounded-xl border bg-muted/20 p-4" key={group.id}>
                     <div><p className="font-medium">{group.name}</p><p className="text-sm text-muted-foreground">{group.memberCount} {group.memberCount === 1 ? "member" : "members"}</p></div>
-                    <Button asChild size="sm" variant="outline"><Link href={`/groups/${group.id}`}>Open</Link></Button>
+                    <Button asChild size="sm" variant="outline"><Link href={`/groups/${group.id}`}>Open <ArrowRight className="size-3.5" /></Link></Button>
                   </li>
                 ))}
               </ul>
@@ -84,10 +85,10 @@ export default function GroupsPage() {
         </Card>
         <div className="grid gap-6 sm:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle>Create group</CardTitle><CardDescription>Start a group for your friends.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="size-4" /> Create group</CardTitle><CardDescription>Start a group for your friends.</CardDescription></CardHeader>
             <CardContent><form className="space-y-4" onSubmit={createGroup}>
               <div className="space-y-2"><Label htmlFor="group-name">Group name</Label><Input id="group-name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} required /></div>
-              <Button>Create</Button>
+              <Button>Create group</Button>
             </form></CardContent>
           </Card>
           <Card>

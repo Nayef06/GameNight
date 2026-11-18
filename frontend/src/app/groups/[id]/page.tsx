@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { GameThumbnail } from "@/components/GameThumbnail";
+import { ArrowLeft, BarChart3, CalendarDays, Hash, Users } from "lucide-react";
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
@@ -190,22 +191,22 @@ export default function GroupPage() {
   return (
     <RequireAuth>
       <div className="space-y-6">
-        <Button asChild variant="ghost" size="sm"><Link href="/groups">← Back to groups</Link></Button>
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
+        <Button asChild variant="ghost" size="sm"><Link href="/groups"><ArrowLeft className="size-4" /> Back to groups</Link></Button>
+        {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+        {message && <p role="status" className="rounded-lg border bg-muted/40 p-3 text-sm">{message}</p>}
         {!group ? !error && <p className="text-sm text-muted-foreground">Loading group...</p> : (
           <>
-            <div className="space-y-1">
-              <h1 className="text-2xl font-semibold">{group.name}</h1>
-              <p className="text-sm text-muted-foreground">Join code: <strong className="font-mono text-foreground">{group.joinCode}</strong></p>
+            <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl border bg-card p-6">
+              <div className="space-y-1"><p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Your group</p><h1 className="text-3xl font-semibold tracking-tight">{group.name}</h1><p className="text-sm text-muted-foreground">{group.members.length} {group.members.length === 1 ? "member" : "members"} playing together</p></div>
+              <Badge variant="outline" className="h-8 gap-2 rounded-lg px-3 text-xs"><Hash className="size-3.5" /> Join code <strong className="font-mono text-foreground">{group.joinCode}</strong></Badge>
             </div>
             <Card>
-              <CardHeader><CardTitle>Members</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Users className="size-4" /> Members</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <ul className="divide-y divide-border">
                   {group.members.map((member) => (
                     <li className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0" key={member.id}>
-                      <span>{member.username}{member.creator && <Badge variant="outline" className="ml-2">Creator</Badge>}</span>
+                      <span className="flex items-center gap-2"><span className="flex size-8 items-center justify-center rounded-full border bg-muted text-xs font-semibold uppercase">{member.username.slice(0, 2)}</span>{member.username}{member.creator && <Badge variant="outline">Creator</Badge>}</span>
                       {group.currentUserIsCreator && !member.creator && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button size="sm" variant="destructive">Remove</Button></AlertDialogTrigger>
@@ -248,7 +249,7 @@ export default function GroupPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>GameNight session</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="size-4" /> GameNight session</CardTitle><CardDescription>Vote together on what to play next.</CardDescription></CardHeader>
               <CardContent className="space-y-3">
                 {activeSession ? (
                   <>
@@ -272,13 +273,13 @@ export default function GroupPage() {
                 <CardDescription>Games owned by every member. Each matching preferred tag adds 1 point per member. Matching multiplayer and player count preferences add 1 point each. Recently chosen games lose 2 points. Highest scores appear first.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <form className="space-y-4" onSubmit={applyFilters}>
+                <form className="space-y-4 rounded-xl border bg-muted/20 p-4" onSubmit={applyFilters}>
                   <fieldset className="space-y-3">
                     <legend className="mb-1 text-sm font-medium">Tags</legend>
                     <p className="text-sm text-muted-foreground">Games must have every selected tag.</p>
                     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                       {availableTags.map((tag) => (
-                        <div className="flex items-center gap-2" key={tag}>
+                        <div className="flex items-center gap-2 rounded-lg border bg-background/50 p-2.5" key={tag}>
                           <Checkbox id={`filter-tag-${tag}`} checked={selectedTags.includes(tag)} onCheckedChange={() => toggleTag(tag)} />
                           <Label htmlFor={`filter-tag-${tag}`} className="font-normal">{tag}</Label>
                         </div>
@@ -304,18 +305,18 @@ export default function GroupPage() {
                 <div className="border-t pt-4">
                   {sharedGames.length === 0 ? <p className="text-sm text-muted-foreground">{appliedFilterQuery ? "No shared games match these filters." : "No games are currently owned by everyone in this group."}</p> : (
                     <ul className="space-y-2">{sharedGames.map((game) => (
-                      <li className={`flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3 ${game.preferenceScore === sharedGames[0].preferenceScore ? "border-green-800 bg-green-950/30" : "border-border"}`} key={game.id}>
+                      <li className={`flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 ${game.preferenceScore === sharedGames[0].preferenceScore ? "border-foreground/40 bg-muted/60" : "border-border bg-muted/20"}`} key={game.id}>
                         <div className="flex min-w-0 items-center gap-3">
                           <GameThumbnail title={game.title} />
                           <div className="min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center gap-2"><strong className="font-medium">{game.title}</strong>{game.preferenceScore === sharedGames[0].preferenceScore && <Badge className="border-green-800 bg-green-950 text-green-300" variant="outline">Top score</Badge>}</div>
+                            <div className="flex flex-wrap items-center gap-2"><strong className="font-medium">{game.title}</strong>{game.preferenceScore === sharedGames[0].preferenceScore && <Badge variant="secondary">Top score</Badge>}</div>
                             <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} · Max players: {game.maxPlayers}</p>
                             <p className="text-sm text-muted-foreground">Platforms: {game.platforms.map((platform) => PLATFORMS[platform]).join(", ")}</p>
                             {game.platforms.length > 1 && <p className="text-sm text-muted-foreground">Members own this game on different platforms. Cross-play compatibility has not been verified.</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm">Score: <strong>{game.preferenceScore}</strong></span>
+                          <Badge variant="outline">Score {game.preferenceScore}</Badge>
                           <Button type="button" size="sm" disabled={choosingGameId !== null} onClick={() => chooseGame(game)}>{choosingGameId === game.id ? "Choosing..." : "Choose game"}</Button>
                         </div>
                       </li>
@@ -325,15 +326,17 @@ export default function GroupPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Group Statistics</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="size-4" /> Group Statistics</CardTitle></CardHeader>
+              <CardContent className="text-sm">
                 {statisticsError ? <p role="alert" className="text-destructive">{statisticsError}</p> : statistics ? (
                   <>
-                    <p>Completed Sessions: {statistics.completedSessions}</p>
-                    <p>Games Selected: {statistics.gamesSelected}</p>
-                    <p>Most Selected Game: {statistics.mostSelectedGame
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border bg-muted/20 p-4"><p className="font-medium">Completed Sessions: {statistics.completedSessions}</p></div>
+                      <div className="rounded-lg border bg-muted/20 p-4"><p className="font-medium">Games Selected: {statistics.gamesSelected}</p></div>
+                      <div className="rounded-lg border bg-muted/20 p-4"><p className="font-medium">Most Selected Game: {statistics.mostSelectedGame
                       ? `${statistics.mostSelectedGame.title} (${statistics.mostSelectedGame.count} ${statistics.mostSelectedGame.count === 1 ? "time" : "times"})`
-                      : "None yet"}</p>
+                      : "None yet"}</p></div>
+                    </div>
                   </>
                 ) : <p className="text-muted-foreground">Loading statistics...</p>}
               </CardContent>

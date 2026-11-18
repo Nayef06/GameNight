@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { api, AppNotification } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bell } from "lucide-react";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -38,18 +41,21 @@ export default function NotificationsPage() {
 
   return (
     <RequireAuth>
-      <div className="max-w-xl space-y-5">
-        <h1 className="text-2xl font-semibold">Notifications</h1>
+      <div className="max-w-3xl space-y-6">
+        <div className="space-y-1"><h1 className="text-3xl font-semibold tracking-tight">Notifications</h1><p className="text-sm text-muted-foreground">Updates from your groups and game nights.</p></div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {loading ? <p>Loading notifications...</p> : notifications.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No notifications yet.</p>
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="size-4" /> Inbox</CardTitle><CardDescription>{notifications.filter((notification) => !notification.isRead).length} unread</CardDescription></CardHeader>
+          <CardContent>
+        {loading ? <p className="text-sm text-muted-foreground">Loading notifications...</p> : notifications.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">No notifications yet.</div>
         ) : (
           <ul className="divide-y divide-border">
             {notifications.map((notification) => (
-              <li key={notification.id} className="flex items-center justify-between gap-4 py-3">
+              <li key={notification.id} className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
                 <div>
                   <p className={notification.isRead ? "text-muted-foreground" : "font-medium"}>
-                    {notification.message}
+                    {notification.message} {!notification.isRead && <Badge variant="secondary" className="ml-1">New</Badge>}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(notification.createdAt).toLocaleString()}
@@ -64,6 +70,8 @@ export default function NotificationsPage() {
             ))}
           </ul>
         )}
+          </CardContent>
+        </Card>
       </div>
     </RequireAuth>
   );

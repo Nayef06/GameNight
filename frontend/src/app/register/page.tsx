@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Gamepad2 } from "lucide-react";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -37,10 +38,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="mx-auto max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Create account</CardTitle>
-        <CardDescription>Set up your GameNight account.</CardDescription>
+    <Card className="mx-auto mt-8 max-w-md">
+      <CardHeader className="space-y-4 text-center">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-xl border bg-muted"><Gamepad2 className="size-6" aria-hidden="true" /></div>
+        <div className="space-y-1"><CardTitle className="text-2xl font-semibold">Create account</CardTitle>
+        <CardDescription>Set up GameNight and start playing together.</CardDescription></div>
       </CardHeader>
       <CardContent className="space-y-4">
         <form className="space-y-4" onSubmit={submit}>
@@ -50,10 +52,10 @@ export default function RegisterPage() {
             <Input id="password" type="password" autoComplete="new-password" minLength={6} aria-describedby="password-hint" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <p id="password-hint" className="text-sm text-muted-foreground">At least 6 characters.</p>
           </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button className="w-full" disabled={busy}>{busy ? "Creating..." : "Register"}</Button>
+          {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+          <Button size="lg" className="w-full" disabled={busy}>{busy ? "Creating..." : "Register"}</Button>
         </form>
-        <p className="text-sm text-muted-foreground">Already registered? <Link className="text-foreground underline underline-offset-4" href="/login">Login</Link></p>
+        <p className="text-center text-sm text-muted-foreground">Already registered? <Link className="font-medium text-foreground underline underline-offset-4" href="/login">Login</Link></p>
       </CardContent>
     </Card>
   );

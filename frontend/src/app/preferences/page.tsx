@@ -74,7 +74,7 @@ export default function PreferencesPage() {
   return (
     <RequireAuth>
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">Preferences</h1>
+        <div className="space-y-1"><h1 className="text-3xl font-semibold tracking-tight">Preferences</h1><p className="text-sm text-muted-foreground">Tell your group what you like to play.</p></div>
         <Card>
           <CardHeader><CardTitle>Game preferences</CardTitle><CardDescription>Used to rank shared games in your groups.</CardDescription></CardHeader>
           <CardContent>
@@ -84,7 +84,7 @@ export default function PreferencesPage() {
                   <legend className="mb-3 text-sm font-medium">Preferred tags</legend>
                   <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                     {availableTags.map((tag) => (
-                      <div className="flex items-center gap-2" key={tag}>
+                      <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-3" key={tag}>
                         <Checkbox id={`tag-${tag}`} checked={preferredTags.includes(tag)} onCheckedChange={() => toggleTag(tag)} />
                         <Label htmlFor={`tag-${tag}`} className="font-normal">{tag}</Label>
                       </div>
@@ -99,7 +99,7 @@ export default function PreferencesPage() {
                       ["MULTIPLAYER", "Prefer multiplayer"],
                       ["SINGLE_PLAYER", "Prefer single player"],
                     ].map(([value, label]) => (
-                      <div className="flex items-center gap-2" key={value}>
+                      <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-3" key={value}>
                         <RadioGroupItem id={`multiplayer-${value}`} value={value} />
                         <Label htmlFor={`multiplayer-${value}`} className="font-normal">{label}</Label>
                       </div>
@@ -113,8 +113,8 @@ export default function PreferencesPage() {
                 <Button disabled={saving}>{saving ? "Saving..." : "Save preferences"}</Button>
               </form>
             )}
-            {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
-            {message && <p role="status" className="mt-4 text-sm text-muted-foreground">{message}</p>}
+            {error && <p role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+            {message && <p role="status" className="mt-4 rounded-lg border bg-muted/40 p-3 text-sm">{message}</p>}
           </CardContent>
         </Card>
       </div>

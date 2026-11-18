@@ -25,7 +25,12 @@ const thumbnails: Record<string, string> = {
   Valorant: "/games/valorant.png",
 };
 
-export function GameThumbnail({ title, className }: { title: string; className?: string }) {
+export function GameThumbnail({ title, className, width = 112, height = 56 }: {
+  title: string;
+  className?: string;
+  width?: number;
+  height?: number;
+}) {
   const src = thumbnails[title];
   const styles = cn("h-14 w-28 shrink-0 rounded-md border border-border bg-muted object-cover", className);
 
@@ -33,5 +38,5 @@ export function GameThumbnail({ title, className }: { title: string; className?:
     return <div className={cn(styles, "flex items-center justify-center")} role="img" aria-label={`No thumbnail for ${title}`}><Gamepad2 className="size-5 text-muted-foreground" aria-hidden="true" /></div>;
   }
 
-  return <Image src={src} alt={`${title} thumbnail`} width={112} height={56} className={styles} />;
+  return <Image src={src} alt={`${title} thumbnail`} width={width} height={height} className={styles} />;
 }
