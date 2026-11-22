@@ -136,7 +136,7 @@ export default function SessionPage() {
               <form className="space-y-4" onSubmit={submitVote}>
                 <fieldset className="space-y-3" disabled={busy}>
                   <legend className="sr-only">Choose a Game:</legend>
-                  <RadioGroup value={selectedGameId?.toString()} onValueChange={(value) => setSelectedGameId(Number(value))}>
+                  <RadioGroup value={selectedGameId?.toString() ?? ""} onValueChange={(value) => setSelectedGameId(Number(value))}>
                   {session.candidates.map((game) => (
                     <label className="flex cursor-pointer items-center gap-3 rounded-xl border bg-muted/20 p-4 transition-colors hover:bg-muted/50 has-data-checked:border-foreground/60 has-data-checked:bg-muted" key={game.id}>
                       <RadioGroupItem value={String(game.id)} disabled={busy} />
