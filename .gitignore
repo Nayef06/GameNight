@@ -15,3 +15,7 @@ backend/target/
 .vscode/
 *.iml
 .env
+
+# Generated reports and temporary files
+/output/
+/tmp/
