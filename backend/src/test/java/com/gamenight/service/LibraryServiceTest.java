@@ -43,13 +43,14 @@ class LibraryServiceTest {
         AppUser user = user(1L);
         Game game = game(10L, "Lethal Company", List.of("Co-op", "Horror"), true, 4);
         when(currentUserService.get()).thenReturn(user);
+        when(game.getSteamAppId()).thenReturn(1966720L);
         when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
         when(userGameRepository.existsByUserIdAndGameIdAndPlatform(1L, 10L, GamingPlatform.OTHER)).thenReturn(false);
 
         LibraryGameResponse response = libraryService.addGame(10L, GamingPlatform.OTHER);
 
         assertThat(response).isEqualTo(new LibraryGameResponse(
-                10L, "Lethal Company", List.of("Co-op", "Horror"), true, 4, GamingPlatform.OTHER));
+                10L, "Lethal Company", List.of("Co-op", "Horror"), true, 4, GamingPlatform.OTHER, 1966720L));
         verify(gameRepository, never()).save(any());
         verify(userGameRepository).save(any(UserGame.class));
     }

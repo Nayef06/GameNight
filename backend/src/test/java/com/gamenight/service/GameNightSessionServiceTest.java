@@ -135,7 +135,7 @@ class GameNightSessionServiceTest {
 
     private void allowSharedGames(Long... ids) {
         when(groupService.getSharedGames(10L)).thenReturn(java.util.Arrays.stream(ids)
-                .map(id -> new SharedGameResponse(id, "Game " + id, List.of(), true, 4, 0, List.of()))
+                .map(id -> new SharedGameResponse(id, "Game " + id, List.of(), true, 4, 0, List.of(), null))
                 .toList());
     }
 

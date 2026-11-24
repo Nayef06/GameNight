@@ -78,6 +78,6 @@ public class GameSelectionService {
 
     private GameSelectionResponse toResponse(GroupGameSelection selection) {
         return new GameSelectionResponse(selection.getId(), selection.getGame().getId(),
-                selection.getGame().getTitle(), selection.getSelectedAt());
+                selection.getGame().getTitle(), selection.getSelectedAt(), selection.getGame().getSteamAppId());
     }
 }

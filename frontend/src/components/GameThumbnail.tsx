@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,18 +28,23 @@ const thumbnails: Record<string, string> = {
   Valorant: "/games/valorant.png",
 };
 
-export function GameThumbnail({ title, className, width = 112, height = 56 }: {
+export function GameThumbnail({ title, steamAppId, className, width = 112, height = 56 }: {
+  steamAppId?: number | null;
   title: string;
   className?: string;
   width?: number;
   height?: number;
 }) {
-  const src = thumbnails[title];
+  const [failedSources, setFailedSources] = useState<string[]>([]);
+  const steamSrc = steamAppId && Number.isSafeInteger(steamAppId) && steamAppId > 0
+    ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${steamAppId}/header.jpg`
+    : undefined;
+  const src = [steamSrc, thumbnails[title]].find((candidate) => candidate && !failedSources.includes(candidate));
   const styles = cn("h-14 w-28 shrink-0 rounded-md border border-border bg-muted object-cover", className);
 
   if (!src) {
     return <div className={cn(styles, "flex items-center justify-center")} role="img" aria-label={`No thumbnail for ${title}`}><Gamepad2 className="size-5 text-muted-foreground" aria-hidden="true" /></div>;
   }
 
-  return <Image src={src} alt={`${title} thumbnail`} width={width} height={height} className={styles} />;
+  return <Image src={src} alt={`${title} thumbnail`} width={width} height={height} className={styles} onError={() => setFailedSources((failed) => [...failed, src])} />;
 }

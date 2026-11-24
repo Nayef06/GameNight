@@ -75,7 +75,7 @@ public class GameCatalog implements ApplicationRunner {
         return gameRepository.findAll().stream()
                 .filter(game -> contains(game.getNormalizedTitle()))
                 .map(game -> new GameResponse(game.getId(), game.getTitle(), game.getTags(),
-                        game.isMultiplayerSupport(), game.getMaxPlayers()))
+                        game.isMultiplayerSupport(), game.getMaxPlayers(), game.getSteamAppId()))
                 .sorted((left, right) -> left.title().compareToIgnoreCase(right.title()))
                 .toList();
     }

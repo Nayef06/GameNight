@@ -234,7 +234,7 @@ public class GroupService {
                         calculatePreferenceScore(game, groupMembers)
                                 + calculateGroupSizeAdjustment(game, groupMembers.size())
                                 - (recentlySelectedGameIds.contains(game.getId()) ? 2 : 0),
-                        platforms.get(game.getId()).stream().sorted().toList()))
+                        platforms.get(game.getId()).stream().sorted().toList(), game.getSteamAppId()))
                 .sorted(Comparator.comparingInt(SharedGameResponse::preferenceScore).reversed()
                         .thenComparing(SharedGameResponse::title, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(SharedGameResponse::title))

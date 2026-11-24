@@ -19,7 +19,7 @@ public final class GroupDtos {
     }
     public record DiscordWebhookStatus(boolean discordWebhookConfigured) {}
     public record CreateGameSelectionRequest(@NotNull Long gameId) {}
-    public record GameSelectionResponse(Long id, Long gameId, String gameTitle, Instant selectedAt) {}
+    public record GameSelectionResponse(Long id, Long gameId, String gameTitle, Instant selectedAt, Long steamAppId) {}
     public record GroupSummary(Long id, String name, String joinCode, long memberCount) {}
     public record GroupMember(Long id, String username, boolean creator) {}
     public record MostSelectedGame(String title, long count) {}
@@ -31,7 +31,8 @@ public final class GroupDtos {
             boolean multiplayerSupport,
             int maxPlayers,
             int preferenceScore,
-            List<GamingPlatform> platforms
+            List<GamingPlatform> platforms,
+            Long steamAppId
     ) {}
     public record GroupDetails(
             Long id,

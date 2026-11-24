@@ -90,7 +90,7 @@ export default function CreateSessionPage() {
                 <label key={game.id} className="flex cursor-pointer items-center gap-3 rounded-xl border bg-muted/20 p-3 transition-colors hover:bg-muted/50 has-data-checked:border-foreground/60 has-data-checked:bg-muted">
                   <Checkbox checked={selectedIds.includes(game.id)} onCheckedChange={() => toggleGame(game.id)}
                     disabled={saving || (!selectedIds.includes(game.id) && selectedIds.length >= 5)} />
-                  <GameThumbnail title={game.title} />
+                  <GameThumbnail steamAppId={game.steamAppId} title={game.title} />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium">{game.title}</span>
                     <span className="text-sm text-muted-foreground">{game.platforms.map((platform) => PLATFORMS[platform]).join(", ")}</span>

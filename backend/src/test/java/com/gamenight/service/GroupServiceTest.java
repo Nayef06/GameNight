@@ -232,7 +232,7 @@ class GroupServiceTest {
         List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
+                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER), null));
     }
 
     @Test
@@ -253,8 +253,8 @@ class GroupServiceTest {
         List<SharedGameResponse> result = groupService.getSharedGames(10L);
 
         assertThat(result).containsExactly(
-                new SharedGameResponse(101L, "Minecraft", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)),
-                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER))
+                new SharedGameResponse(101L, "Minecraft", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER), null),
+                new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER), null)
         );
     }
 
@@ -265,7 +265,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, List.of("survival"), null, null))
-                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER), null));
     }
 
     @Test
@@ -279,7 +279,7 @@ class GroupServiceTest {
 
         assertThat(groupService.getSharedGames(10L, List.of("sandbox", "Survival"), null, null))
                 .containsExactly(new SharedGameResponse(
-                        100L, "Terraria", List.of("Sandbox", "Survival"), true, 8, 4, List.of(GamingPlatform.OTHER)));
+                        100L, "Terraria", List.of("Sandbox", "Survival"), true, 8, 4, List.of(GamingPlatform.OTHER), null));
     }
 
     @Test
@@ -289,7 +289,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, false, null))
-                .containsExactly(new SharedGameResponse(101L, "Portal", List.of("Puzzle"), false, 1, 2, List.of(GamingPlatform.OTHER)));
+                .containsExactly(new SharedGameResponse(101L, "Portal", List.of("Puzzle"), false, 1, 2, List.of(GamingPlatform.OTHER), null));
     }
 
     @Test
@@ -299,7 +299,7 @@ class GroupServiceTest {
         prepareOneMemberGames(10L, terraria, portal);
 
         assertThat(groupService.getSharedGames(10L, null, null, 4))
-                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
+                .containsExactly(new SharedGameResponse(100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER), null));
     }
 
     @Test
@@ -380,7 +380,7 @@ class GroupServiceTest {
 
         assertThat(groupService.getSharedGames(10L))
                 .containsExactly(new SharedGameResponse(
-                        100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER)));
+                        100L, "Terraria", List.of("Survival"), true, 8, 2, List.of(GamingPlatform.OTHER), null));
     }
 
     @Test
@@ -583,6 +583,7 @@ class GroupServiceTest {
 
     private Game game(Long id) {
         Game game = mock(Game.class);
+        lenient().when(game.getSteamAppId()).thenReturn(null);
         lenient().when(game.getId()).thenReturn(id);
         return game;
     }

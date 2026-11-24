@@ -307,7 +307,7 @@ export default function GroupPage() {
                     <ul className="space-y-2">{sharedGames.map((game) => (
                       <li className={`flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 ${game.preferenceScore === sharedGames[0].preferenceScore ? "border-foreground/40 bg-muted/60" : "border-border bg-muted/20"}`} key={game.id}>
                         <div className="flex min-w-0 items-center gap-3">
-                          <GameThumbnail title={game.title} />
+                          <GameThumbnail steamAppId={game.steamAppId} title={game.title} />
                           <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2"><strong className="font-medium">{game.title}</strong>{game.preferenceScore === sharedGames[0].preferenceScore && <Badge variant="secondary">Top score</Badge>}</div>
                             <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · Multiplayer: {game.multiplayerSupport ? "Yes" : "No"} · Max players: {game.maxPlayers}</p>
@@ -343,7 +343,7 @@ export default function GroupPage() {
             </Card>
             <Card>
               <CardHeader><CardTitle>Recently chosen</CardTitle></CardHeader>
-              <CardContent>{recentSelections.length === 0 ? <p className="text-sm text-muted-foreground">No games have been chosen yet.</p> : <ul className="divide-y divide-border">{recentSelections.map((selection) => <li className="flex items-center gap-3 py-2 first:pt-0 last:pb-0" key={selection.id}><GameThumbnail title={selection.gameTitle} /><span>{selection.gameTitle}</span></li>)}</ul>}</CardContent>
+              <CardContent>{recentSelections.length === 0 ? <p className="text-sm text-muted-foreground">No games have been chosen yet.</p> : <ul className="divide-y divide-border">{recentSelections.map((selection) => <li className="flex items-center gap-3 py-2 first:pt-0 last:pb-0" key={selection.id}><GameThumbnail steamAppId={selection.steamAppId} title={selection.gameTitle} /><span>{selection.gameTitle}</span></li>)}</ul>}</CardContent>
             </Card>
           </>
         )}

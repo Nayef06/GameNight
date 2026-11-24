@@ -63,6 +63,6 @@ public class LibraryService {
     private LibraryGameResponse toResponse(UserGame ownership) {
         Game game = ownership.getGame();
         return new LibraryGameResponse(game.getId(), game.getTitle(), game.getTags(),
-                game.isMultiplayerSupport(), game.getMaxPlayers(), ownership.getPlatform());
+                game.isMultiplayerSupport(), game.getMaxPlayers(), ownership.getPlatform(), game.getSteamAppId());
     }
 }

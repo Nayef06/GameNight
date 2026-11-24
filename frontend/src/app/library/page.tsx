@@ -168,7 +168,7 @@ export default function LibraryPage() {
                       onClick={() => setGameId(String(game.id))}
                       className={`flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-muted/20 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selected ? "border-primary bg-muted ring-2 ring-primary" : "border-border hover:border-foreground/50 hover:bg-muted/50"} ${owned ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                     >
-                      <GameThumbnail title={game.title} width={320} height={160} className="h-24 w-full rounded-none border-0 object-cover sm:h-28" />
+                      <GameThumbnail steamAppId={game.steamAppId} title={game.title} width={320} height={160} className="h-24 w-full rounded-none border-0 object-cover sm:h-28" />
                       <span className="flex w-full flex-1 items-start justify-between gap-2 p-2 text-sm font-medium">
                         <span className="min-w-0">{game.title}</span>
                         {selected && <Badge variant="secondary">Selected</Badge>}
@@ -179,7 +179,7 @@ export default function LibraryPage() {
                 })}
               </div>
               {visibleGames.length === 0 && <p className="text-sm text-muted-foreground">No games match your search.</p>}
-              {selectedGame && <div className="flex items-center gap-3"><GameThumbnail title={selectedGame.title} /><p className="text-sm text-muted-foreground">Tags: {selectedGame.tags.join(", ")} · {selectedGame.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}</p></div>}
+              {selectedGame && <div className="flex items-center gap-3"><GameThumbnail steamAppId={selectedGame.steamAppId} title={selectedGame.title} /><p className="text-sm text-muted-foreground">Tags: {selectedGame.tags.join(", ")} · {selectedGame.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {selectedGame.maxPlayers} {selectedGame.maxPlayers === 1 ? "player" : "players"}</p></div>}
               <Button disabled={!gameId || ownedGameIds.has(Number(gameId))}>Add to library</Button>
             </form>
           </CardContent>
@@ -208,7 +208,7 @@ export default function LibraryPage() {
                 {games.map((game) => (
                   <li className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={`${game.id}-${game.platform}`}>
                     <div className="flex min-w-0 items-center gap-3">
-                      <GameThumbnail title={game.title} />
+                      <GameThumbnail steamAppId={game.steamAppId} title={game.title} />
                       <div className="min-w-0 space-y-1">
                         <p className="font-medium">{game.title} — {PLATFORMS[game.platform]}</p>
                         <p className="text-sm text-muted-foreground">Tags: {game.tags.join(", ")} · {game.multiplayerSupport ? "Multiplayer" : "Single player"} · Up to {game.maxPlayers} {game.maxPlayers === 1 ? "player" : "players"}</p>

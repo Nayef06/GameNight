@@ -13,13 +13,14 @@ public final class LibraryDtos {
 
     public record LibraryGameResponse(Long id, String title, List<String> tags,
                                       boolean multiplayerSupport, int maxPlayers,
-                                      GamingPlatform platform) {}
+                                      GamingPlatform platform, Long steamAppId) {}
 
     public record GameResponse(
             Long id,
             String title,
             List<String> tags,
             boolean multiplayerSupport,
-            int maxPlayers
+            int maxPlayers,
+            Long steamAppId
     ) {}
 }

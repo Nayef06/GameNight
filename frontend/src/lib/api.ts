@@ -27,6 +27,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
 
 export type AuthResponse = { token: string; username: string };
 export type Game = {
+  steamAppId?: number | null;
   id: number;
   title: string;
   tags: string[];
@@ -47,6 +48,7 @@ export type LibraryGame = Game & { platform: GamingPlatform };
 export type SteamSyncResult = { imported: number; alreadyInLibrary: number };
 export type SharedGame = Game & { preferenceScore: number; platforms: GamingPlatform[] };
 export type GameSelection = {
+  steamAppId?: number | null;
   id: number;
   gameId: number;
   gameTitle: string;
